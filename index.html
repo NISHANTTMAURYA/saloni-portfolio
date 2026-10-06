@@ -618,9 +618,7 @@
         }
       };
 
-      const transformStr = (currentOffset.x !== 0 || currentOffset.y !== 0)
-        ? `translate(${currentOffset.x}px, ${currentOffset.y}px)`
-        : undefined;
+      const hasMoved = currentOffset.x !== 0 || currentOffset.y !== 0;
 
       return (
         <div
@@ -632,12 +630,107 @@
           className={`${className} draggable-doodle ${isDragging ? 'is-dragging' : ''}`}
           style={{
             ...style,
-            transform: transformStr ? `${style.transform || ''} ${transformStr}`.trim() : style.transform,
+            translate: hasMoved ? `${currentOffset.x}px ${currentOffset.y}px` : undefined,
           }}
           title="Drag me anywhere!"
         >
           {children}
         </div>
+      );
+    }
+
+    /* --- SMOOTH PENCIL / SKETCHPEN DRAWING CURSOR EFFECT --- */
+    function PencilDrawingCursor() {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let width = (canvas.width = window.innerWidth);
+        let height = (canvas.height = window.innerHeight);
+
+        const onResize = () => {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', onResize);
+
+        // Historical cursor points
+        const points = [];
+        let animId = null;
+
+        const onPointerMove = (e) => {
+          // Ignore touch devices so it doesn't obstruct scrolling on mobile
+          if (e.pointerType === 'touch') return;
+          points.push({
+            x: e.clientX,
+            y: e.clientY,
+            time: Date.now()
+          });
+          if (points.length > 36) points.shift();
+        };
+
+        window.addEventListener('pointermove', onPointerMove, { passive: true });
+
+        const render = () => {
+          ctx.clearRect(0, 0, width, height);
+
+          const now = Date.now();
+          // Filter out points older than 650ms for smooth vanishing pencil trail
+          while (points.length > 0 && now - points[0].time > 650) {
+            points.shift();
+          }
+
+          if (points.length > 1) {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            for (let i = 1; i < points.length; i++) {
+              const p0 = points[i - 1];
+              const p1 = points[i];
+              const age = (now - p1.time) / 650;
+              const alpha = Math.max(0, 1 - age);
+
+              const midX = (p0.x + p1.x) / 2;
+              const midY = (p0.y + p1.y) / 2;
+
+              // Primary smooth graphite / sketchpen stroke
+              ctx.beginPath();
+              ctx.moveTo(p0.x, p0.y);
+              ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+              ctx.strokeStyle = `rgba(39, 39, 42, ${alpha * 0.45})`;
+              ctx.lineWidth = 2.0;
+              ctx.stroke();
+
+              // Secondary fine pencil grain accent for authentic sketch look
+              ctx.beginPath();
+              ctx.moveTo(p0.x + 0.5, p0.y - 0.5);
+              ctx.lineTo(midX + 0.5, midY - 0.5);
+              ctx.strokeStyle = `rgba(82, 82, 91, ${alpha * 0.28})`;
+              ctx.lineWidth = 1.0;
+              ctx.stroke();
+            }
+          }
+
+          animId = requestAnimationFrame(render);
+        };
+
+        render();
+
+        return () => {
+          window.removeEventListener('resize', onResize);
+          window.removeEventListener('pointermove', onPointerMove);
+          if (animId) cancelAnimationFrame(animId);
+        };
+      }, []);
+
+      return (
+        <canvas
+          ref={canvasRef}
+          className="fixed inset-0 pointer-events-none z-[9998]"
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none' }}
+        />
       );
     }
 
@@ -731,6 +824,8 @@
 
       return (
         <DoodleDragContext.Provider value={{ positions: doodlePositions, updatePos: updateDoodlePos, resetPositions: resetDoodlePositions, hasMoved: hasMovedDoodles }}>
+          {/* Smooth Pencil / Sketchpen Drawing Cursor Effect */}
+          <PencilDrawingCursor />
           <div className="min-h-full w-full flex flex-col justify-between flex-1 mx-auto relative px-2 sm:px-6 lg:px-8 2xl:px-12">
           {/* Global Whiteboard Scribble / Scratch Reveal SVG Mask (remounts cleanly on every view change) */}
           <svg width="0" height="0" className="absolute pointer-events-none" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
@@ -887,24 +982,6 @@
                ========================================= */}
             {view === 'home' && (
               <div className="w-full my-auto relative z-10">
-
-                {/* Tic-Tac-Toe (X and O) Board - Positioned on the right side, moved more below to comfortably clear Chai Code Cat */}
-                <DraggableDoodle id="home-tictactoe" className="hidden lg:block absolute -bottom-24 lg:-bottom-28 right-0 lg:right-2 pointer-events-none opacity-95 z-10 transform translate-y-4 rotate-3">
-                  <svg className="w-36 sm:w-40 lg:w-44 h-36 sm:h-40 lg:h-44 text-[#059669]" viewBox="0 0 90 90" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                    {/* Grid lines */}
-                    <line x1="30" y1="10" x2="30" y2="80" pathLength="1" className="draw" style={{ '--d': '0.6s', '--t': '0.3s' }} />
-                    <line x1="60" y1="10" x2="60" y2="80" pathLength="1" className="draw" style={{ '--d': '0.8s', '--t': '0.3s' }} />
-                    <line x1="10" y1="30" x2="80" y2="30" pathLength="1" className="draw" style={{ '--d': '1.0s', '--t': '0.3s' }} />
-                    <line x1="10" y1="60" x2="80" y2="60" pathLength="1" className="draw" style={{ '--d': '1.2s', '--t': '0.3s' }} />
-                    {/* X mark in top-left */}
-                    <line x1="14" y1="14" x2="26" y2="26" stroke="#2563EB" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '1.6s', '--t': '0.18s' }} />
-                    <line x1="26" y1="14" x2="14" y2="26" stroke="#2563EB" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '1.8s', '--t': '0.18s' }} />
-                    {/* O mark in center */}
-                    <circle cx="45" cy="45" r="7.5" stroke="#F59E0B" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '2.2s', '--t': '0.4s' }} />
-                    {/* Winning pink tick line across bottom */}
-                    <path d="M 20 72 L 40 76 L 75 40" stroke="#EC4899" strokeWidth="4.2" pathLength="1" className="draw" style={{ '--d': '2.8s', '--t': '0.45s' }} />
-                  </svg>
-                </DraggableDoodle>
 
                 {/* Hero Grid */}
                 <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center py-2 sm:py-4 lg:py-6 relative z-10">
@@ -1211,6 +1288,24 @@
                           <span className="text-xs text-gray-500 font-sans font-bold">tap to close</span>
                         </div>
                       )}
+
+                      {/* Tic-Tac-Toe (X and O) Board - Positioned directly below sleeping cat matching composition image */}
+                      <DraggableDoodle id="home-tictactoe" className="absolute -bottom-24 sm:-bottom-28 left-[58%] -translate-x-1/2 pointer-events-auto opacity-95 z-20 transform rotate-3">
+                        <svg className="w-32 sm:w-36 lg:w-40 h-32 sm:h-36 lg:h-40 text-[#059669]" viewBox="0 0 90 90" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                          {/* Grid lines */}
+                          <line x1="30" y1="10" x2="30" y2="80" pathLength="1" className="draw" style={{ '--d': '0.6s', '--t': '0.3s' }} />
+                          <line x1="60" y1="10" x2="60" y2="80" pathLength="1" className="draw" style={{ '--d': '0.8s', '--t': '0.3s' }} />
+                          <line x1="10" y1="30" x2="80" y2="30" pathLength="1" className="draw" style={{ '--d': '1.0s', '--t': '0.3s' }} />
+                          <line x1="10" y1="60" x2="80" y2="60" pathLength="1" className="draw" style={{ '--d': '1.2s', '--t': '0.3s' }} />
+                          {/* X mark in top-left */}
+                          <line x1="14" y1="14" x2="26" y2="26" stroke="#2563EB" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '1.6s', '--t': '0.18s' }} />
+                          <line x1="26" y1="14" x2="14" y2="26" stroke="#2563EB" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '1.8s', '--t': '0.18s' }} />
+                          {/* O mark in center */}
+                          <circle cx="45" cy="45" r="7.5" stroke="#F59E0B" strokeWidth="3.8" pathLength="1" className="draw" style={{ '--d': '2.2s', '--t': '0.4s' }} />
+                          {/* Winning pink tick line across bottom */}
+                          <path d="M 20 72 L 40 76 L 75 40" stroke="#EC4899" strokeWidth="4.2" pathLength="1" className="draw" style={{ '--d': '2.8s', '--t': '0.45s' }} />
+                        </svg>
+                      </DraggableDoodle>
 
                     </div>
                   </div>
