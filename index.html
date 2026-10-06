@@ -98,6 +98,59 @@
 
 
 
+    /* SVG Hand-Drawn Stroke Drawing Animation */
+    @keyframes drawBorderHero {
+      0% {
+        stroke-dashoffset: 600;
+      }
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes drawBorderNav {
+      0% {
+        stroke-dashoffset: 400;
+      }
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .doodle-draw-hero-1 {
+      stroke-dasharray: 600;
+      stroke-dashoffset: 0;
+      animation: drawBorderHero 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .doodle-draw-hero-2 {
+      stroke-dasharray: 600;
+      stroke-dashoffset: 0;
+      animation: drawBorderHero 1.3s cubic-bezier(0.25, 1, 0.5, 1) 0.12s backwards;
+    }
+    .group:hover .doodle-draw-hero-1 {
+      animation: drawBorderHero 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .group:hover .doodle-draw-hero-2 {
+      animation: drawBorderHero 0.85s cubic-bezier(0.25, 1, 0.5, 1) 0.1s backwards;
+    }
+
+    .doodle-draw-nav-1 {
+      stroke-dasharray: 400;
+      stroke-dashoffset: 0;
+      animation: drawBorderNav 1.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .doodle-draw-nav-2 {
+      stroke-dasharray: 400;
+      stroke-dashoffset: 0;
+      animation: drawBorderNav 1.2s cubic-bezier(0.25, 1, 0.5, 1) 0.12s backwards;
+    }
+    .group:hover .doodle-draw-nav-1 {
+      animation: drawBorderNav 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .group:hover .doodle-draw-nav-2 {
+      animation: drawBorderNav 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.1s backwards;
+    }
+
     /* Washi tape pin for notes */
     .washi-tape {
       background: rgba(254, 240, 138, 0.85);
@@ -484,9 +537,9 @@
                 <div className="relative inline-flex items-center justify-center group">
                   {/* Subtle hand-drawn grey sketch outline */}
                   <svg className="absolute -inset-1 w-[calc(100%+8px)] h-[calc(100%+8px)] pointer-events-none transition-transform duration-200 group-hover:scale-[1.02]" viewBox="0 0 160 48" preserveAspectRatio="none">
-                    <rect x="2" y="2" width="156" height="44" rx="22" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeDasharray="80 2" strokeLinecap="round" opacity="0.85" />
+                    <rect x="2" y="2" width="156" height="44" rx="22" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" className="doodle-draw-nav-1" />
                     <path d="M 22 1.5 C 6 2, 1 12, 2 24 C 3 36, 8 46.5, 23 46.5 L 137 47 C 151 47, 158 37, 158 24 C 158 11, 152 1.5, 137 1.5 Z" 
-                          fill="none" stroke="#A1A1AA" strokeWidth="1.2" strokeDasharray="60 3" opacity="0.65" />
+                          fill="none" stroke="#A1A1AA" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" className="doodle-draw-nav-2" />
                   </svg>
                   <button
                     onClick={() => { setView(view === 'contact' ? 'home' : 'contact'); setMobileMenuOpen(false); }}
@@ -661,9 +714,9 @@
                         <div className="relative inline-flex items-center justify-center group">
                           {/* Subtle hand-drawn grey sketch outline */}
                           <svg className="absolute -inset-1 w-[calc(100%+8px)] h-[calc(100%+8px)] pointer-events-none transition-transform duration-200 group-hover:scale-[1.02]" viewBox="0 0 240 60" preserveAspectRatio="none">
-                            <rect x="3" y="3" width="234" height="54" rx="27" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeDasharray="100 2" strokeLinecap="round" opacity="0.85" />
+                            <rect x="3" y="3" width="234" height="54" rx="27" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" className="doodle-draw-hero-1" />
                             <path d="M 27 2 C 8 3, 2 15, 3 31 C 4 47, 10 57, 28 57 L 212 58 C 230 58, 237 46, 237 31 C 237 14, 230 2, 211 2 Z" 
-                                  fill="none" stroke="#A1A1AA" strokeWidth="1.2" strokeDasharray="80 4" opacity="0.65" />
+                                  fill="none" stroke="#A1A1AA" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" className="doodle-draw-hero-2" />
                           </svg>
                           <button
                             onClick={() => setView('projects')}
