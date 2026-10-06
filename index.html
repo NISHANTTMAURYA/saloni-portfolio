@@ -668,38 +668,34 @@
                           <span className="text-[#BE185D]">Cat</span>
                         </div>
 
-                        {/* Authentic Handy-Arrows Library SVG: Pink Arrow */}
+                        {/* Authentic Handy-Arrows Library SVG: Pink Arrow (Restored 14.svg pointing LEFT) */}
                         <div className="flex justify-end mt-1 mr-1 relative z-20">
                           <img 
                             src="public/arrows/14.svg" 
                             alt="Arrow" 
-                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 transform rotate-[-25deg]"
+                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 transform rotate-[45deg]"
                             style={{ filter: 'invert(47%) sepia(68%) saturate(3015%) hue-rotate(308deg) brightness(97%) contrast(93%)' }}
                           />
                         </div>
                       </div>
 
-                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY + HANDY-ARROWS LIBRARY (Orange) --- */}
+                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY (Arrow on top pointing to cakes, text below) --- */}
                       <div className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-20 pointer-events-none text-left">
+                        {/* Authentic Handy-Arrows Library SVG: Orange Arrow (On top) */}
+                        <div className="mb-0.5 ml-3 relative z-20">
+                          <img 
+                            src="public/arrows/28.svg" 
+                            alt="Arrow" 
+                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 transform translate-x-2"
+                            style={{ filter: 'invert(52%) sepia(90%) saturate(1630%) hue-rotate(15deg) brightness(95%) contrast(93%)' }}
+                          />
+                        </div>
+
+                        {/* Sweetscape Home Bakery Text (Below arrow) */}
                         <div className="transform rotate-2 leading-tight font-marker font-bold">
                           <p className="text-[#BE185D] text-lg sm:text-xl md:text-2xl">Sweetscape</p>
                           <p className="text-sm sm:text-base text-[#78350F] font-marker font-bold">Home Bakery</p>
                         </div>
-                        
-                        {/* Authentic Handy-Arrows Library SVG: Orange Arrow */}
-                        <div className="mt-1 ml-2 relative z-20">
-                          <img 
-                            src="public/arrows/28.svg" 
-                            alt="Arrow" 
-                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16"
-                            style={{ filter: 'invert(52%) sepia(90%) saturate(1630%) hue-rotate(15deg) brightness(95%) contrast(93%)' }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Hand-drawn accent mark */}
-                      <div className="absolute top-[35%] -left-2 sm:-left-4 pointer-events-none text-xl sm:text-2xl text-black">
-                        ✦
                       </div>
 
                       {/* Steaming Chai Interactive Mug */}
@@ -757,16 +753,17 @@
                     <span className="bg-[#DCEBFA] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Selected Works
                     </span>
-                    <div className="flex items-center gap-3 sm:gap-4 mt-1">
-                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-none">
+                    <div className="flex items-center gap-3 sm:gap-5 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
                         Featured Projects
                       </h2>
-                      {/* Tech Saloni with glasses enlarged and aligned to text height */}
+                      {/* Tech Saloni with glasses enlarged to match heading text */}
                       <div title="Tech Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
                         <Mascot 
                           directions="mascots/saloni-tech-directions.webp" 
                           reactions="mascots/saloni-tech-reactions.webp" 
-                          size={74} 
+                          size={105} 
+                          className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
                           label="Tech Saloni"
                         />
                       </div>
@@ -871,16 +868,17 @@
                     <span className="bg-[#FEF3C7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Career & Roles
                     </span>
-                    <div className="flex items-center gap-3 sm:gap-4 mt-1">
-                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-none">
+                    <div className="flex items-center gap-3 sm:gap-5 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
                         Experience & Leadership
                       </h2>
-                      {/* Baker/Sweetscape Saloni Mascot with ribbon bow enlarged and aligned to text height */}
+                      {/* Baker/Sweetscape Saloni Mascot with ribbon bow enlarged to match heading text */}
                       <div title="Baker Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
                         <Mascot 
                           directions="mascots/saloni-baker-directions.webp" 
                           reactions="mascots/saloni-baker-reactions.webp" 
-                          size={74} 
+                          size={105} 
+                          className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
                           label="Baker Saloni"
                         />
                       </div>
@@ -1113,20 +1111,9 @@
                     <span className="bg-[#DCFCE7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Direct Connection
                     </span>
-                    <div className="flex items-center gap-3 sm:gap-4 mt-1">
-                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-none">
-                        Let's Connect
-                      </h2>
-                      {/* Mascot enlarged and aligned to text height */}
-                      <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
-                        <Mascot 
-                          directions="mascots/saloni-directions.webp" 
-                          reactions="mascots/saloni-reactions.webp" 
-                          size={74} 
-                          label="Saloni Mascot"
-                        />
-                      </div>
-                    </div>
+                    <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] mt-1 leading-tight">
+                      Let's Connect
+                    </h2>
                   </div>
                   <button 
                     onClick={() => setView('home')} 
