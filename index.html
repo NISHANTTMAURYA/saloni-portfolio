@@ -205,13 +205,24 @@
       animation: animInRight 0.45s ease-out forwards;
     }
 
-    /* Intentional "jumpy" entrance: replicates the look you get on the first visit
-       after a refresh (Tailwind CDN styles arrive a frame late, and transition: all
-       springs cards/buttons into place). Applied for ~2 frames on every view change. */
-    .view-entering .hand-card-ui,
-    .view-entering .transition-all {
-      padding: 0 !important;
-      background-color: transparent !important;
+    /* Intentional "jumpy" entrance (recreates the springy first-visit look).
+       Uses the independent `scale` property + opacity only => GPU-composited,
+       no layout work, and it stacks with the translate-based anim-* keyframes. */
+    @keyframes cardPop {
+      0%   { scale: 0.88; }
+      100% { scale: 1; }
+    }
+    main .hand-card-ui {
+      animation: cardPop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    main .hand-card-ui.anim-left {
+      animation: animInLeft 0.45s ease-out forwards, cardPop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    main .hand-card-ui.anim-right {
+      animation: animInRight 0.45s ease-out forwards, cardPop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    main .hand-card-ui.anim-top {
+      animation: animInTop 0.4s ease-out forwards, cardPop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
     }
   </style>
 </head>
@@ -464,17 +475,6 @@
         return () => window.removeEventListener('hashchange', onHashChange);
       }, []);
 
-      // Replay the "jumpy" refresh-style entrance on every view change
-      const [entering, setEntering] = useState(true);
-      useLayoutEffect(() => {
-        setEntering(true);
-        let raf2;
-        const raf1 = requestAnimationFrame(() => {
-          raf2 = requestAnimationFrame(() => setEntering(false));
-        });
-        return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
-      }, [view]);
-
       // Scroll to top whenever page view changes and sync hash
       useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -635,7 +635,7 @@
           </header>
 
           {/* --- MAIN STAGE --- */}
-          <main className={`flex-1 my-auto flex flex-col items-center justify-center w-full relative py-2 sm:py-4 ${entering ? 'view-entering' : ''}`}>
+          <main className="flex-1 my-auto flex flex-col items-center justify-center w-full relative py-2 sm:py-4">
 
             {/* =========================================
                 1. HOME VIEW (SCRIBO INSPIRED HANDMADE STAGE)
