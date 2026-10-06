@@ -668,12 +668,12 @@
                           <span className="text-[#BE185D]">Cat</span>
                         </div>
 
-                        {/* Authentic Handy-Arrows Library SVG: Pink Arrow (Restored 14.svg pointing LEFT) */}
+                        {/* Authentic Handy-Arrows Library SVG: Pink Arrow (Pointing LEFT towards cat) */}
                         <div className="flex justify-end mt-1 mr-1 relative z-20">
                           <img 
                             src="public/arrows/14.svg" 
                             alt="Arrow" 
-                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 transform rotate-[45deg]"
+                            className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 transform rotate-[-25deg]"
                             style={{ filter: 'invert(47%) sepia(68%) saturate(3015%) hue-rotate(308deg) brightness(97%) contrast(93%)' }}
                           />
                         </div>
@@ -872,14 +872,14 @@
                       <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
                         Experience & Leadership
                       </h2>
-                      {/* Baker/Sweetscape Saloni Mascot with ribbon bow enlarged to match heading text */}
-                      <div title="Baker Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
+                      {/* Baker Chef Saloni Mascot with chef hat and whisk enlarged to match heading text */}
+                      <div title="Baker Chef Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
                         <Mascot 
-                          directions="mascots/saloni-baker-directions.webp" 
-                          reactions="mascots/saloni-baker-reactions.webp" 
+                          directions="mascots/saloni-chef-directions.webp" 
+                          reactions="mascots/saloni-chef-reactions.webp" 
                           size={105} 
                           className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
-                          label="Baker Saloni"
+                          label="Baker Chef Saloni"
                         />
                       </div>
                     </div>
@@ -1002,9 +1002,21 @@
                     <span className="bg-[#FCE7F3] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Background & Profile
                     </span>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] mt-1">
-                      About Saloni Bhosale
-                    </h2>
+                    <div className="flex items-center gap-3 sm:gap-5 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
+                        About Saloni Bhosale
+                      </h2>
+                      {/* Waving Hi/Hello Saloni Mascot matching heading text */}
+                      <div title="Waving Saloni (Hi / Hello)" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
+                        <Mascot 
+                          directions="mascots/saloni-wave-directions.webp" 
+                          reactions="mascots/saloni-wave-reactions.webp" 
+                          size={105} 
+                          className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
+                          label="Waving Saloni"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <button 
                     onClick={() => setView('home')} 
@@ -1018,8 +1030,8 @@
                 <div className="w-full bg-[#FAF7F0] p-5 sm:p-6 hand-card-ui mb-6 flex flex-col sm:flex-row items-center gap-6 anim-top">
                   <div className="relative flex-shrink-0 flex flex-col items-center">
                     <Mascot 
-                      directions="mascots/saloni-directions.webp" 
-                      reactions="mascots/saloni-reactions.webp" 
+                      directions="mascots/saloni-wave-directions.webp" 
+                      reactions="mascots/saloni-wave-reactions.webp" 
                       size={120} 
                       label="Saloni Chibi Mascot"
                     />
