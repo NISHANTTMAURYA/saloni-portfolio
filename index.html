@@ -201,84 +201,9 @@
       0% { opacity: 0; transform: translateX(30px); }
       100% { opacity: 1; transform: translateX(0); }
     }
-    /* Hand-Drawn Doodle Sketch & Draw Entrance Animations */
-    @keyframes doodleSketchIn {
-      0% {
-        opacity: 0;
-        transform: scale(0.7) rotate(-4deg);
-      }
-      70% {
-        opacity: 1;
-        transform: scale(1.05) rotate(1.5deg);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
-      }
+    .anim-right {
+      animation: animInRight 0.45s ease-out forwards;
     }
-
-    @keyframes crownSettle {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, -24px) rotate(-6deg) scale(0.65);
-      }
-      65% {
-        opacity: 1;
-        transform: translate(-50%, 3px) rotate(18deg) scale(1.08);
-      }
-      100% {
-        opacity: 1;
-        transform: translate(-50%, 0) rotate(14deg) scale(1);
-      }
-    }
-
-    @keyframes drawLine {
-      0% {
-        stroke-dashoffset: 120;
-        opacity: 0.1;
-      }
-      100% {
-        stroke-dashoffset: 0;
-        opacity: 1;
-      }
-    }
-
-    @keyframes drawCircle {
-      0% {
-        stroke-dashoffset: 60;
-        opacity: 0.1;
-      }
-      100% {
-        stroke-dashoffset: 0;
-        opacity: 1;
-      }
-    }
-
-    .anim-pop {
-      animation: crownSettle 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-
-    .doodle-sketch {
-      animation: doodleSketchIn 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
-    }
-
-    .sketch-line {
-      stroke-dasharray: 120;
-      stroke-dashoffset: 0;
-      animation: drawLine 0.65s cubic-bezier(0.25, 1, 0.5, 1) backwards;
-    }
-
-    .sketch-circle {
-      stroke-dasharray: 60;
-      stroke-dashoffset: 0;
-      animation: drawCircle 0.65s cubic-bezier(0.25, 1, 0.5, 1) backwards;
-    }
-
-    .doodle-delay-1 { animation-delay: 0.08s; }
-    .doodle-delay-2 { animation-delay: 0.18s; }
-    .doodle-delay-3 { animation-delay: 0.28s; }
-    .doodle-delay-4 { animation-delay: 0.38s; }
-    .doodle-delay-5 { animation-delay: 0.48s; }
   </style>
 </head>
 <body class="min-h-screen w-full bg-[#FAF7F0] text-[#1F1F1F] p-3 sm:p-5 lg:p-7 2xl:p-8 flex flex-col justify-between">
@@ -552,7 +477,7 @@
       };
 
       return (
-        <div className="min-h-full w-full flex flex-col justify-between flex-1 max-w-7xl mx-auto relative">
+        <div className="min-h-full w-full flex flex-col justify-between flex-1 mx-auto relative px-2 sm:px-6 lg:px-8 2xl:px-12">
           {/* --- TOP NAVBAR WITH CURSOR-TRACKING CHIBI MASCOT (STICKY & ANIMATED ON SCROLL) --- */}
           <header className={`sticky top-2 sm:top-3 z-50 w-full flex flex-col gap-2.5 navbar-sticky-wrap ${
             isScrolled ? 'navbar-scrolled' : 'py-2 sm:py-3'
@@ -699,20 +624,20 @@
               <div className="w-full my-auto relative z-10">
 
                 {/* Tic-Tac-Toe (X and O) Board - Positioned on the right side, moved more below to comfortably clear Chai Code Cat */}
-                <div className="hidden lg:block absolute -bottom-24 lg:-bottom-28 right-0 lg:right-2 pointer-events-none opacity-95 z-10 transform translate-y-4 rotate-3 doodle-sketch">
+                <div className="hidden lg:block absolute -bottom-24 lg:-bottom-28 right-0 lg:right-2 pointer-events-none opacity-95 z-10 transform translate-y-4 rotate-3">
                   <svg className="w-36 sm:w-40 lg:w-44 h-36 sm:h-40 lg:h-44 text-[#059669]" viewBox="0 0 90 90" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
                     {/* Grid lines */}
-                    <line x1="30" y1="10" x2="30" y2="80" className="sketch-line doodle-delay-1" />
-                    <line x1="60" y1="10" x2="60" y2="80" className="sketch-line doodle-delay-1" />
-                    <line x1="10" y1="30" x2="80" y2="30" className="sketch-line doodle-delay-2" />
-                    <line x1="10" y1="60" x2="80" y2="60" className="sketch-line doodle-delay-2" />
+                    <line x1="30" y1="10" x2="30" y2="80" />
+                    <line x1="60" y1="10" x2="60" y2="80" />
+                    <line x1="10" y1="30" x2="80" y2="30" />
+                    <line x1="10" y1="60" x2="80" y2="60" />
                     {/* X mark in top-left */}
-                    <line x1="14" y1="14" x2="26" y2="26" stroke="#2563EB" strokeWidth="3.8" className="sketch-line doodle-delay-3" />
-                    <line x1="26" y1="14" x2="14" y2="26" stroke="#2563EB" strokeWidth="3.8" className="sketch-line doodle-delay-3" />
+                    <line x1="14" y1="14" x2="26" y2="26" stroke="#2563EB" strokeWidth="3.8" />
+                    <line x1="26" y1="14" x2="14" y2="26" stroke="#2563EB" strokeWidth="3.8" />
                     {/* O mark in center */}
-                    <circle cx="45" cy="45" r="7.5" stroke="#F59E0B" strokeWidth="3.8" className="sketch-circle doodle-delay-4" />
+                    <circle cx="45" cy="45" r="7.5" stroke="#F59E0B" strokeWidth="3.8" />
                     {/* Winning pink tick line across bottom */}
-                    <path d="M 20 72 L 40 76 L 75 40" stroke="#EC4899" strokeWidth="4.2" className="sketch-line doodle-delay-5" />
+                    <path d="M 20 72 L 40 76 L 75 40" stroke="#EC4899" strokeWidth="4.2" />
                   </svg>
                 </div>
 
@@ -836,7 +761,7 @@
                       />
 
                       {/* Hand-drawn Queen Crown Doodle perched on Saloni's head */}
-                      <div className="absolute -top-6 sm:-top-8 lg:-top-10 left-[57%] -translate-x-1/2 pointer-events-none z-30 transform rotate-[14deg] anim-pop">
+                      <div className="absolute -top-6 sm:-top-8 lg:-top-10 left-[57%] -translate-x-1/2 pointer-events-none z-30 transform rotate-[14deg]">
                         <svg 
                           className="w-16 h-14 sm:w-20 sm:h-18 lg:w-24 lg:h-20 drop-shadow-md" 
                           viewBox="0 0 100 80" 
@@ -1185,7 +1110,7 @@
                 {/* Clean post-grid bottom doodles in natural flow (ZERO overlap with cards) */}
                 <div className="w-full flex justify-between items-center px-4 sm:px-8 pt-6 pointer-events-none relative z-10">
                   {/* Left: Database / SQL Flow */}
-                  <div className="opacity-95 transform -rotate-4 doodle-sketch doodle-delay-1">
+                  <div className="opacity-95 transform -rotate-4">
                     <svg className="w-24 sm:w-28 h-24 sm:h-28 text-[#059669]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
                       <ellipse cx="50" cy="25" rx="30" ry="10" />
                       <path d="M 20 25 L 20 50 C 20 60, 80 60, 80 50 L 80 25" />
@@ -1195,7 +1120,7 @@
                   </div>
 
                   {/* Right: Sweetscape Cupcake */}
-                  <div className="opacity-95 transform rotate-6 doodle-sketch doodle-delay-2">
+                  <div className="opacity-95 transform rotate-6">
                     <svg className="w-24 sm:w-28 h-24 sm:h-28 text-[#EC4899]" viewBox="0 0 100 80" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round">
                       <path d="M 25 40 C 25 25, 40 18, 50 18 C 60 18, 75 25, 75 40 Z" fill="#FDF2F8" />
                       <path d="M 28 40 L 34 72 C 35 76, 65 76, 66 72 L 72 40" />
@@ -1646,7 +1571,7 @@
                 
                 {/* --- LEFT CANVAS FLANK (ORGANICALLY RANDOMIZED / SCATTERED) --- */}
                 {/* 1. Doodle: Chat Speech Bubbles - Upper-left, shifted inward */}
-                <div className="hidden lg:block absolute top-2 left-6 xl:left-10 pointer-events-none opacity-95 transform -rotate-12 z-20 text-center doodle-sketch doodle-delay-1">
+                <div className="hidden lg:block absolute top-2 left-6 xl:left-10 pointer-events-none opacity-95 transform -rotate-12 z-20 text-center">
                   <svg className="w-32 h-32 xl:w-36 xl:h-36 text-[#F43F5E]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
                     <path d="M 18 25 C 18 16, 68 16, 68 25 C 68 38, 48 38, 40 48 L 40 38 L 26 38 C 20 38, 18 32, 18 25 Z" fill="#FFE4E6" />
                     <circle cx="34" cy="27" r="3.5" fill="#E11D48" />
@@ -1657,14 +1582,14 @@
                 </div>
 
                 {/* Accent mini twinkle: Left upper */}
-                <div className="hidden lg:block absolute top-[24%] left-1 xl:left-3 pointer-events-none opacity-90 transform rotate-12 z-20 doodle-sketch doodle-delay-2">
+                <div className="hidden lg:block absolute top-[24%] left-1 xl:left-3 pointer-events-none opacity-90 transform rotate-12 z-20">
                   <svg className="w-8 h-8 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M12 2v20M2 12h20M5 5l14 14M5 19L19 5" />
                   </svg>
                 </div>
 
                 {/* 2. Doodle: Big Hand-Drawn Sketch Star & Sparkles - Pushed outward towards left margin */}
-                <div className="hidden lg:block absolute top-[40%] -left-1 xl:left-2 pointer-events-none opacity-95 transform rotate-12 z-20 text-center doodle-sketch doodle-delay-3">
+                <div className="hidden lg:block absolute top-[40%] -left-1 xl:left-2 pointer-events-none opacity-95 transform rotate-12 z-20 text-center">
                   <svg className="w-28 h-28 xl:w-32 xl:h-32 text-[#F59E0B]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Big hand-drawn playful 5-point star */}
                     <path d="M 50 12 L 59 36 L 84 38 L 65 54 L 71 78 L 50 64 L 29 78 L 35 54 L 16 38 L 41 36 Z" fill="#FEF3C7" strokeWidth="3.8" />
@@ -1677,7 +1602,7 @@
                 </div>
 
                 {/* 3. Doodle: Hand-Drawn Floating Hearts - Lower-left, staggered inward */}
-                <div className="hidden lg:block absolute bottom-5 left-8 xl:left-14 pointer-events-none opacity-95 transform -rotate-6 z-20 text-center doodle-sketch doodle-delay-4">
+                <div className="hidden lg:block absolute bottom-5 left-8 xl:left-14 pointer-events-none opacity-95 transform -rotate-6 z-20 text-center">
                   <svg className="w-32 h-32 xl:w-36 xl:h-36 text-[#E11D48]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
                     {/* Big cute hand-drawn heart */}
                     <path d="M 46 38 C 36 12, 10 22, 20 54 C 28 68, 46 82, 46 82 C 46 82, 64 68, 72 54 C 82 22, 56 12, 46 38 Z" fill="#FFE4E6" strokeWidth="3.8" />
@@ -1692,7 +1617,7 @@
 
                 {/* --- RIGHT CANVAS FLANK (ORGANICALLY RANDOMIZED / SCATTERED) --- */}
                 {/* 4. Doodle: Soaring Paper Airplane - Upper-right */}
-                <div className="hidden lg:block absolute top-2 right-4 xl:right-8 pointer-events-none opacity-95 transform rotate-12 z-20 text-center doodle-sketch doodle-delay-1">
+                <div className="hidden lg:block absolute top-2 right-4 xl:right-8 pointer-events-none opacity-95 transform rotate-12 z-20 text-center">
                   <svg className="w-36 h-36 xl:w-40 xl:h-40 text-[#10B981]" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
                     <path d="M 20 90 Q 60 110 70 70 Q 75 40 45 50 Q 25 58 45 75 T 90 35" stroke="#10B981" strokeWidth="3.5" strokeDasharray="5 5" />
                     <path d="M 105 18 L 65 38 L 82 45 L 88 65 Z" fill="#D1FAE5" />
@@ -1702,14 +1627,14 @@
                 </div>
 
                 {/* Accent mini scribble: Right upper/mid */}
-                <div className="hidden lg:block absolute top-[26%] right-2 xl:right-4 pointer-events-none opacity-90 transform -rotate-12 z-20 doodle-sketch doodle-delay-2">
+                <div className="hidden lg:block absolute top-[26%] right-2 xl:right-4 pointer-events-none opacity-90 transform -rotate-12 z-20">
                   <svg className="w-9 h-7 text-[#EC4899]" viewBox="0 0 40 25" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
                     <path d="M 2 12 Q 10 2 20 12 T 38 12" />
                   </svg>
                 </div>
 
                 {/* 5. Doodle: Cheerful Sunshine / Happy Smiley Face - Staggered inward towards center */}
-                <div className="hidden lg:block absolute top-[44%] right-10 xl:right-16 pointer-events-none opacity-95 transform -rotate-6 z-20 text-center doodle-sketch doodle-delay-3">
+                <div className="hidden lg:block absolute top-[44%] right-10 xl:right-16 pointer-events-none opacity-95 transform -rotate-6 z-20 text-center">
                   <svg className="w-28 h-28 xl:w-32 xl:h-32 text-[#F59E0B]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
                     {/* Sun sketchy radiating rays */}
                     <line x1="50" y1="6" x2="50" y2="15" strokeWidth="3.5" />
@@ -1735,7 +1660,7 @@
                 </div>
 
                 {/* 6. Doodle: Flying Mail Envelope - Lower-right, pushed outward */}
-                <div className="hidden lg:block absolute bottom-2 right-1 xl:right-3 pointer-events-none opacity-95 transform rotate-6 z-20 text-center doodle-sketch doodle-delay-4">
+                <div className="hidden lg:block absolute bottom-2 right-1 xl:right-3 pointer-events-none opacity-95 transform rotate-6 z-20 text-center">
                   <svg className="w-36 h-36 xl:w-40 xl:h-40 text-[#3B82F6]" viewBox="0 0 120 70" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round">
                     <rect x="30" y="16" width="60" height="42" rx="5" fill="#DBEAFE" />
                     <path d="M 30 18 L 60 40 L 90 18" strokeWidth="3.6" />
