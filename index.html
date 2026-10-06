@@ -353,14 +353,30 @@
     ];
 
     function App() {
-      const [view, setView] = useState('home'); // 'home' | 'projects' | 'experience' | 'about' | 'contact'
+      const getHashView = () => {
+        const hash = window.location.hash.replace('#', '');
+        return ['home', 'projects', 'experience', 'about', 'contact'].includes(hash) ? hash : 'home';
+      };
+      const [view, setView] = useState(getHashView); // 'home' | 'projects' | 'experience' | 'about' | 'contact'
       const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
       const [mascotBubble, setMascotBubble] = useState("Hey there! Welcome to my space (boop my head!)");
       const [easterEggText, setEasterEggText] = useState(null);
 
-      // Scroll to top whenever page view changes
+      // Listen for browser back/forward or hash changes
+      useEffect(() => {
+        const onHashChange = () => {
+          setView(getHashView());
+        };
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+      }, []);
+
+      // Scroll to top whenever page view changes and sync hash
       useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.location.hash.replace('#', '') !== view) {
+          window.location.hash = view;
+        }
       }, [view]);
 
       const funQuotes = [
@@ -378,45 +394,33 @@
 
       return (
         <div className="min-h-full w-full flex flex-col justify-between flex-1 max-w-7xl mx-auto relative">
-          
-          {/* Scribo-Style Background Doodles - STRICTLY HOME ONLY (Positioned at top-left, top-right & bottom-right) */}
-          {view === 'home' && (
-            <>
-              {/* 1. Top-Left Pink Wavy Ribbon Doodle (High at Top-Left Corner above Header/Hey) */}
-              <svg className="absolute top-1 left-1 sm:top-2 sm:left-4 lg:left-6 w-48 sm:w-64 lg:w-80 h-16 sm:h-24 lg:h-28 text-[#F472B6] pointer-events-none opacity-90 z-0" viewBox="0 0 160 60" fill="none" stroke="currentColor" strokeWidth="5.5" strokeLinecap="round">
-                <path d="M 8 32 C 32 8, 58 52, 90 28 C 122 6, 142 50, 154 26" />
-              </svg>
-
-              {/* 2. Top-Right Golden Looping Squiggle Ribbon Doodle (High at Top-Right Corner) */}
-              <svg className="absolute top-1 right-1 sm:top-2 sm:right-4 lg:right-6 w-36 sm:w-52 lg:w-64 h-36 sm:h-52 lg:h-64 text-[#F59E0B] pointer-events-none opacity-90 z-0" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round">
-                <path d="M 110 12 C 78 12, 54 42, 72 78 C 86 102, 106 84, 86 60 C 62 36, 30 60, 14 108" />
-              </svg>
-
-              {/* 3. Bottom-Right Green Sketchy Grid with Pink Checkmark Doodle (Far Bottom-Right Corner) */}
-              <svg className="absolute bottom-2 right-2 sm:bottom-4 sm:right-6 w-24 sm:w-32 lg:w-36 h-24 sm:h-32 lg:h-36 text-[#059669] pointer-events-none opacity-90 z-0" viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round">
-                <line x1="24" y1="12" x2="24" y2="68" />
-                <line x1="52" y1="12" x2="52" y2="68" />
-                <line x1="12" y1="26" x2="68" y2="26" />
-                <line x1="12" y1="54" x2="68" y2="54" />
-                <path d="M 22 42 L 36 58 L 66 20" stroke="#EC4899" strokeWidth="5" />
-              </svg>
-            </>
-          )}
-
           {/* --- TOP NAVBAR WITH CURSOR-TRACKING CHIBI MASCOT --- */}
           <header className="flex flex-col gap-2.5 py-2 sm:py-3 anim-top relative z-30">
             <div className="flex items-center justify-between w-full">
               {/* Logo + Interactive Mascot Head that tracks cursor! */}
               <div 
-                className="flex items-center gap-2 cursor-pointer group"
+                className="flex items-center gap-2 cursor-pointer group relative"
                 onClick={() => { setView('home'); setMobileMenuOpen(false); }}
               >
-                <span className="font-marker font-bold text-3xl sm:text-4xl text-[#1F1F1F] tracking-wide">
-                  Saloni
-                </span>
+                <div className="relative inline-flex flex-col items-start">
+                  <span className="font-marker font-bold text-3xl sm:text-4xl text-[#1F1F1F] tracking-wide leading-none">
+                    Saloni
+                  </span>
+                  {/* Compact Hand-Drawn Pink Wavy Doodle Underline directly under Saloni name */}
+                  <svg 
+                    className="w-20 sm:w-24 h-3 sm:h-3.5 text-[#F472B6] pointer-events-none mt-1 -ml-0.5" 
+                    viewBox="0 0 100 20" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="3.8" 
+                    strokeLinecap="round"
+                  >
+                    <path d="M 4 10 Q 16 3, 28 10 T 52 10 T 76 10 T 96 10" />
+                  </svg>
+                </div>
                 
                 {/* Chibi Saloni Head that turns toward cursor and reacts when booped! */}
-                <div title="Boop Saloni!" className="transform group-hover:scale-105 transition-transform">
+                <div title="Boop Saloni!" className="transform group-hover:scale-105 transition-transform -mt-2">
                   <Mascot 
                     directions="mascots/saloni-directions.webp" 
                     reactions="mascots/saloni-reactions.webp" 
@@ -542,8 +546,23 @@
             {view === 'home' && (
               <div className="w-full my-auto relative z-10">
                 
+                {/* 2 Large Background Accent Doodles for Home Stage (+20% size, organic varied tilt) */}
+                {/* 1. Top-Right Golden Looping Squiggle Ribbon Doodle (Sitting gracefully above character art on right) */}
+                <svg className="absolute top-0 sm:top-2 right-4 sm:right-8 lg:right-10 w-40 sm:w-52 lg:w-60 h-40 sm:h-52 lg:h-60 text-[#F59E0B] pointer-events-none opacity-90 z-0 transform rotate-6" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="5.5" strokeLinecap="round">
+                  <path d="M 110 12 C 78 12, 54 42, 72 78 C 86 102, 106 84, 86 60 C 62 36, 30 60, 14 108" />
+                </svg>
+
+                {/* 2. Bottom-Right Green Sketchy Grid with Pink Checkmark Doodle (+20% size, tilted organically) */}
+                <svg className="absolute bottom-1 sm:bottom-2 right-4 sm:right-8 lg:right-10 w-28 sm:w-36 lg:w-40 h-28 sm:h-36 lg:h-40 text-[#059669] pointer-events-none opacity-95 z-0 transform rotate-3" viewBox="0 0 80 80" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+                  <line x1="24" y1="12" x2="24" y2="68" />
+                  <line x1="52" y1="12" x2="52" y2="68" />
+                  <line x1="12" y1="26" x2="68" y2="26" />
+                  <line x1="12" y1="54" x2="68" y2="54" />
+                  <path d="M 22 42 L 36 58 L 66 20" stroke="#EC4899" strokeWidth="5.5" />
+                </svg>
+
                 {/* Hero Grid */}
-                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center py-2 sm:py-4 lg:py-6">
+                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center py-2 sm:py-4 lg:py-6 relative z-10">
                   
                   {/* Left Column: Heading, Colorful Highlights, Bio, Quick Links */}
                   <div className="lg:col-span-5 space-y-4 text-left anim-left">
@@ -786,70 +805,64 @@
                 2. PROJECTS VIEW (MATCHING HAND-CARD THEME & MASCOT)
                ========================================= */}
             {view === 'projects' && (
-              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20 relative">
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-16 relative">
                 
-                {/* 3 Spread-Out Doodles for Projects View (Outer Gutters, Never Overlapping) */}
-                {/* 1. Top-Right Tech/Code Curly Brackets (Far Right Gutter) */}
-                <svg className="hidden xl:block absolute top-0 right-0 w-36 sm:w-44 h-36 sm:h-44 text-[#3B82F6] pointer-events-none opacity-85 z-0" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                  <path d="M 40 25 C 25 25, 25 45, 15 55 C 25 65, 25 85, 40 85" />
-                  <path d="M 80 25 C 95 25, 95 45, 105 55 C 95 65, 95 85, 80 85" />
-                  <path d="M 55 75 L 65 35" stroke="#F59E0B" strokeWidth="4.5" />
-                  <circle cx="60" cy="18" r="3" fill="#EC4899" />
-                  <circle cx="60" cy="92" r="3" fill="#10B981" />
-                </svg>
-
-                {/* 2. Bottom-Left Database / SQL Data Flow Cylinder (Far Left Gutter) */}
-                <svg className="hidden lg:block absolute bottom-2 left-0 w-36 sm:w-44 h-36 sm:h-44 text-[#059669] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round">
-                  <ellipse cx="50" cy="25" rx="30" ry="10" />
-                  <path d="M 20 25 L 20 50 C 20 60, 80 60, 80 50 L 80 25" />
-                  <path d="M 20 50 L 20 75 C 20 85, 80 85, 80 75 L 80 50" />
-                  <path d="M 12 88 Q 50 68 88 88" stroke="#3B82F6" strokeWidth="4" strokeDasharray="4 4" />
-                </svg>
-
-                {/* 3. Bottom-Right Sweetscape Bakery Cupcake (Far Right Gutter) */}
-                <svg className="hidden sm:block absolute bottom-2 right-2 w-32 sm:w-40 h-32 sm:h-40 text-[#EC4899] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                  <path d="M 25 50 C 25 35, 40 28, 50 28 C 60 28, 75 35, 75 50 Z" fill="#FDF2F8" />
-                  <path d="M 28 50 L 34 82 C 35 86, 65 86, 66 82 L 72 50" />
-                  <line x1="42" y1="52" x2="44" y2="82" />
-                  <line x1="58" y1="52" x2="56" y2="82" />
-                  <circle cx="50" cy="22" r="5" fill="#EF4444" stroke="#EF4444" />
-                </svg>
-
-                {/* Header with Mascot right next to the title text */}
+                {/* Header with Mascot right next to the title text and flanked by permanent doodles (+20% size, varied organic tilts) */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 anim-top relative z-10">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#DCEBFA] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
-                        Selected Works
-                      </span>
-                      {/* Cute Hand-drawn Sparkle Doodle */}
-                      <svg className="w-6 h-6 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                        <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
-                      </svg>
-                    </div>
-                    <div className="flex items-center gap-3 sm:gap-5 mt-1">
-                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
-                        Featured Projects
-                      </h2>
-                      {/* Saloni Mascot beside title matching heading text */}
-                      <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
-                        <Mascot 
-                          directions="mascots/saloni-directions.webp" 
-                          reactions="mascots/saloni-reactions.webp" 
-                          size={105} 
-                          className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
-                          label="Saloni Mascot"
-                        />
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    {/* 1. Unique Top-Left Database / SQL Data Flow Cylinder Doodle (+20% size, tilted -6deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#059669] pointer-events-none opacity-90 flex-shrink-0 transform -rotate-6" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                      <ellipse cx="50" cy="25" rx="30" ry="10" />
+                      <path d="M 20 25 L 20 50 C 20 60, 80 60, 80 50 L 80 25" />
+                      <path d="M 20 50 L 20 75 C 20 85, 80 85, 80 75 L 80 50" />
+                      <path d="M 12 88 Q 50 68 88 88" stroke="#3B82F6" strokeWidth="4" strokeDasharray="4 4" />
+                    </svg>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#DCEBFA] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                          Selected Works
+                        </span>
+                        {/* Cute Hand-drawn Sparkle Doodle */}
+                        <svg className="w-6 h-6 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+                        </svg>
+                      </div>
+                      <div className="flex items-center gap-3 sm:gap-5 mt-1">
+                        <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
+                          Featured Projects
+                        </h2>
+                        {/* Saloni Mascot beside title matching heading text */}
+                        <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
+                          <Mascot 
+                            directions="mascots/saloni-directions.webp" 
+                            reactions="mascots/saloni-reactions.webp" 
+                            size={105} 
+                            className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
+                            label="Saloni Mascot"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
-                  >
-                    Back Home ↶
-                  </button>
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    {/* 2. Unique Top-Right Tech/Code Curly Brackets Doodle (+20% size, tilted +12deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#3B82F6] pointer-events-none opacity-90 flex-shrink-0 transform rotate-12" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+                      <path d="M 40 25 C 25 25, 25 45, 15 55 C 25 65, 25 85, 40 85" />
+                      <path d="M 80 25 C 95 25, 95 45, 105 55 C 95 65, 95 85, 80 85" />
+                      <path d="M 55 75 L 65 35" stroke="#F59E0B" strokeWidth="4.5" />
+                      <circle cx="60" cy="18" r="3" fill="#EC4899" />
+                      <circle cx="60" cy="92" r="3" fill="#10B981" />
+                    </svg>
+
+                    <button 
+                      onClick={() => setView('home')} 
+                      className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                    >
+                      Back Home ↶
+                    </button>
+                  </div>
                 </div>
 
                 {/* Projects Grid */}
@@ -928,6 +941,17 @@
                     </div>
                   </div>
                 </div>
+
+                {/* 3. Bottom Sweetscape Bakery Cupcake Doodle (+20% size, organically tilted -3deg below cards) */}
+                <div className="w-full flex justify-center pt-8 pointer-events-none">
+                  <svg className="w-40 sm:w-48 h-28 sm:h-32 text-[#EC4899] opacity-90 transform -rotate-3" viewBox="0 0 100 80" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round">
+                    <path d="M 25 40 C 25 25, 40 18, 50 18 C 60 18, 75 25, 75 40 Z" fill="#FDF2F8" />
+                    <path d="M 28 40 L 34 72 C 35 76, 65 76, 66 72 L 72 40" />
+                    <line x1="42" y1="42" x2="44" y2="72" />
+                    <line x1="58" y1="42" x2="56" y2="72" />
+                    <circle cx="50" cy="12" r="5" fill="#EF4444" stroke="#EF4444" />
+                  </svg>
+                </div>
               </div>
             )}
 
@@ -935,69 +959,64 @@
                 3. EXPERIENCE VIEW (MASCOT NEXT TO TITLE, NO BACK CARDS)
                ========================================= */}
             {view === 'experience' && (
-              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-24 relative">
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-16 relative">
                 
-                {/* 3 Spread-Out Doodles for Experience View (Outer Gutters) */}
-                {/* 1. Top-Right Sales Megaphone (Far Right Gutter) */}
-                <svg className="hidden xl:block absolute top-0 right-0 w-36 sm:w-44 h-36 sm:h-44 text-[#EA580C] pointer-events-none opacity-85 z-0" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                  <path d="M 30 50 L 55 40 L 55 80 L 30 70 Z" fill="#FFEDD5" />
-                  <path d="M 55 40 L 90 25 L 90 95 L 55 80" />
-                  <path d="M 40 70 L 40 90 L 50 90 L 50 75" strokeWidth="3.5" />
-                  <path d="M 98 42 C 106 50, 106 70, 98 78" stroke="#F59E0B" strokeWidth="4" />
-                </svg>
-
-                {/* 2. Top-Left Baker Chef Hat & Whisk (Far Left Gutter) */}
-                <svg className="hidden md:block absolute top-0 left-0 w-32 sm:w-40 h-32 sm:h-40 text-[#F43F5E] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                  <path d="M 25 65 L 75 65 L 72 80 L 28 80 Z" fill="#FFE4E6" />
-                  <path d="M 25 65 C 15 50, 25 30, 40 35 C 45 20, 55 20, 60 35 C 75 30, 85 50, 75 65" />
-                  <line x1="82" y1="20" x2="68" y2="40" stroke="#78350F" strokeWidth="3.5" />
-                  <path d="M 68 40 Q 60 52 70 56 Q 78 48 68 40" stroke="#78350F" strokeWidth="3" />
-                </svg>
-
-                {/* 3. Bottom-Left Growth Step Chart (Far Left Gutter) */}
-                <svg className="hidden lg:block absolute bottom-2 left-0 w-36 sm:w-44 h-36 sm:h-44 text-[#0284C7] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.8" strokeLinecap="round">
-                  <line x1="15" y1="85" x2="85" y2="85" />
-                  <line x1="15" y1="85" x2="15" y2="15" />
-                  <path d="M 22 75 L 42 55 L 60 62 L 85 28" stroke="#2563EB" strokeWidth="4.5" />
-                  <path d="M 70 28 L 85 28 L 85 43" stroke="#2563EB" strokeWidth="4.5" />
-                </svg>
-
-                {/* Header with Baker/Founder Saloni right next to the title text */}
+                {/* Header with Mascot right next to the title text and flanked by permanent doodles (+20% size, varied organic tilts) */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 anim-top relative z-10">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#FEF3C7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
-                        Career & Roles
-                      </span>
-                      {/* Cute Hand-drawn star badge */}
-                      <svg className="w-6 h-6 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7l1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5z" />
-                      </svg>
-                    </div>
-                    <div className="flex items-center gap-3 sm:gap-5 mt-1">
-                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
-                        Experience & Leadership
-                      </h2>
-                      {/* Saloni Mascot beside title matching heading text */}
-                      <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
-                        <Mascot 
-                          directions="mascots/saloni-directions.webp" 
-                          reactions="mascots/saloni-reactions.webp" 
-                          size={105} 
-                          className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
-                          label="Saloni Mascot"
-                        />
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    {/* 1. Unique Top-Left Baker Chef Hat & Whisk Doodle (+20% size, tilted +6deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#F43F5E] pointer-events-none opacity-90 flex-shrink-0 transform rotate-6" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                      <path d="M 25 65 L 75 65 L 72 80 L 28 80 Z" fill="#FFE4E6" />
+                      <path d="M 25 65 C 15 50, 25 30, 40 35 C 45 20, 55 20, 60 35 C 75 30, 85 50, 75 65" />
+                      <line x1="82" y1="20" x2="68" y2="40" stroke="#78350F" strokeWidth="3.5" />
+                      <path d="M 68 40 Q 60 52 70 56 Q 78 48 68 40" stroke="#78350F" strokeWidth="3" />
+                    </svg>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#FEF3C7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                          Career & Roles
+                        </span>
+                        {/* Cute Hand-drawn star badge */}
+                        <svg className="w-6 h-6 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7l1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5z" />
+                        </svg>
+                      </div>
+                      <div className="flex items-center gap-3 sm:gap-5 mt-1">
+                        <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight">
+                          Experience & Leadership
+                        </h2>
+                        {/* Saloni Mascot beside title matching heading text */}
+                        <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0 flex items-center">
+                          <Mascot 
+                            directions="mascots/saloni-directions.webp" 
+                            reactions="mascots/saloni-reactions.webp" 
+                            size={105} 
+                            className="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
+                            label="Saloni Mascot"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
-                  >
-                    Back Home ↶
-                  </button>
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    {/* 2. Unique Top-Right Sales Megaphone Doodle (+20% size, tilted -8deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#EA580C] pointer-events-none opacity-90 flex-shrink-0 transform -rotate-8" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+                      <path d="M 30 50 L 55 40 L 55 80 L 30 70 Z" fill="#FFEDD5" />
+                      <path d="M 55 40 L 90 25 L 90 95 L 55 80" />
+                      <path d="M 40 70 L 40 90 L 50 90 L 50 75" strokeWidth="3.5" />
+                      <path d="M 98 42 C 106 50, 106 70, 98 78" stroke="#F59E0B" strokeWidth="4" />
+                    </svg>
+
+                    <button 
+                      onClick={() => setView('home')} 
+                      className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                    >
+                      Back Home ↶
+                    </button>
+                  </div>
                 </div>
 
                 {/* Experience Cards */}
@@ -1128,6 +1147,16 @@
                   </div>
 
                 </div>
+
+                {/* 3. Bottom Growth Step Chart Doodle (+20% size, tilted +2deg below cards grid) */}
+                <div className="w-full flex justify-center pt-8 pointer-events-none">
+                  <svg className="w-56 sm:w-68 h-24 sm:h-28 text-[#0284C7] opacity-90 transform rotate-1" viewBox="0 0 140 60" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                    <line x1="15" y1="50" x2="125" y2="50" />
+                    <line x1="15" y1="50" x2="15" y2="10" />
+                    <path d="M 20 44 L 48 30 L 76 38 L 115 14" stroke="#2563EB" strokeWidth="4.2" />
+                    <path d="M 98 14 L 115 14 L 115 30" stroke="#2563EB" strokeWidth="4.2" />
+                  </svg>
+                </div>
               </div>
             )}
 
@@ -1135,53 +1164,50 @@
                 4. ABOUT VIEW (MATCHING HAND-CARD THEME & MASCOT)
                ========================================= */}
             {view === 'about' && (
-              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20 relative">
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-16 relative">
                 
-                {/* 3 Spread-Out Doodles for About View (Outer Gutters, Clean & Well Spaced) */}
-                {/* 1. Top-Right Graduation Cap (Far Right Gutter, Safe Offset) */}
-                <svg className="hidden xl:block absolute top-0 right-0 w-36 sm:w-44 h-36 sm:h-44 text-[#8B5CF6] pointer-events-none opacity-85 z-0" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                  <path d="M 60 25 L 105 45 L 60 65 L 15 45 Z" fill="#EDE9FE" />
-                  <path d="M 35 55 L 35 78 C 35 90, 85 90, 85 78 L 85 55" />
-                  <path d="M 90 48 L 90 85 C 90 92, 98 92, 98 85 L 98 48" stroke="#F59E0B" strokeWidth="3.5" />
-                </svg>
-
-                {/* 2. Top-Left Steaming Chai Cup (Far Left Gutter, Safe Offset) */}
-                <svg className="hidden md:block absolute top-0 left-0 w-32 sm:w-40 h-32 sm:h-40 text-[#D97706] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                  <path d="M 22 45 L 72 45 L 66 82 C 65 88, 29 88, 28 82 Z" fill="#FEF3C7" />
-                  <path d="M 72 52 C 84 52, 84 72, 70 72" strokeWidth="4" />
-                  <path d="M 36 35 Q 40 22 34 12" stroke="#B45309" strokeWidth="3" />
-                  <path d="M 50 36 Q 56 20 48 10" stroke="#B45309" strokeWidth="3" />
-                </svg>
-
-                {/* 3. Bottom-Right Mumbai Coastal Waves & Sun (Far Right Gutter) */}
-                <svg className="hidden sm:block absolute bottom-2 right-2 w-36 sm:w-44 h-36 sm:h-44 text-[#0284C7] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round">
-                  <path d="M 15 65 Q 32 50 50 65 T 85 65" strokeWidth="4" />
-                  <path d="M 15 78 Q 32 63 50 78 T 85 78" strokeWidth="4" />
-                  <circle cx="50" cy="30" r="14" stroke="#F59E0B" strokeWidth="3.8" fill="#FEF08A" />
-                </svg>
-
-                {/* Header */}
+                {/* Header flanked by permanent doodles */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5 anim-top relative z-10">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#FCE7F3] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
-                        Background & Profile
-                      </span>
-                      {/* Cute Hand-drawn Heart Doodle */}
-                      <svg className="w-5 h-5 text-[#E11D48] fill-[#E11D48]" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    {/* 1. Unique Top-Left Steaming Chai Cup Doodle (+20% size, tilted -6deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#D97706] pointer-events-none opacity-90 flex-shrink-0 transform -rotate-6" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                      <path d="M 22 45 L 72 45 L 66 82 C 65 88, 29 88, 28 82 Z" fill="#FEF3C7" />
+                      <path d="M 72 52 C 84 52, 84 72, 70 72" strokeWidth="4" />
+                      <path d="M 36 35 Q 40 22 34 12" stroke="#B45309" strokeWidth="3" />
+                      <path d="M 50 36 Q 56 20 48 10" stroke="#B45309" strokeWidth="3" />
+                    </svg>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#FCE7F3] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                          Background & Profile
+                        </span>
+                        {/* Cute Hand-drawn Heart Doodle */}
+                        <svg className="w-5 h-5 text-[#E11D48] fill-[#E11D48]" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                      </div>
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight mt-1">
+                        About Saloni Bhosale
+                      </h2>
                     </div>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] leading-tight mt-1">
-                      About Saloni Bhosale
-                    </h2>
                   </div>
-                  <button 
-                    onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
-                  >
-                    Back Home ↶
-                  </button>
+
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    {/* 2. Unique Top-Right Graduation Cap Doodle (+20% size, tilted +8deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#8B5CF6] pointer-events-none opacity-90 flex-shrink-0 transform rotate-8" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+                      <path d="M 60 25 L 105 45 L 60 65 L 15 45 Z" fill="#EDE9FE" />
+                      <path d="M 35 55 L 35 78 C 35 90, 85 90, 85 78 L 85 55" />
+                      <path d="M 90 48 L 90 85 C 90 92, 98 92, 98 85 L 98 48" stroke="#F59E0B" strokeWidth="3.5" />
+                    </svg>
+
+                    <button 
+                      onClick={() => setView('home')} 
+                      className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                    >
+                      Back Home ↶
+                    </button>
+                  </div>
                 </div>
 
                 {/* Character Banner */}
@@ -1207,7 +1233,7 @@
                         onClick={triggerRandomQuote}
                         className="text-sm font-sans font-bold text-gray-600 hover:text-black underline cursor-pointer"
                       >
-                        tap for quote ✨
+                        tap for quote
                       </button>
                     </div>
                     <p className="font-marker font-bold text-2xl sm:text-3xl text-black">
@@ -1225,7 +1251,6 @@
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="font-marker font-bold text-3xl text-black">Summary & Education</h3>
-                        <span className="text-2xl">🎓</span>
                       </div>
                       <div className="border-l-4 border-[#FEE053] pl-3 py-0.5">
                         <p className="font-marker font-bold text-2xl text-black">BE in ECS Engineering (2024 - 2027)</p>
@@ -1237,7 +1262,7 @@
                     </div>
 
                     <div className="flex flex-wrap gap-2 pt-3 border-t border-black/10 font-marker text-lg text-gray-700">
-                      <span>📍 Mumbai, India</span> • <span>Bhavan's College HSC</span> • <span>St. Louis Convent</span>
+                      <span>Mumbai, India</span> • <span>Bhavan's College HSC</span> • <span>St. Louis Convent</span>
                     </div>
                   </div>
 
@@ -1245,7 +1270,6 @@
                     <div className="bg-[#DCEBFA] p-4 hand-card-ui">
                       <div className="flex items-center justify-between">
                         <h4 className="font-marker font-bold text-2xl text-black inline-block">Tools & BA</h4>
-                        <span>📊</span>
                       </div>
                       <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
                         MS Excel (Pivot, VLOOKUP), Power BI, Jira, Confluence, BRD/FRD, User Stories, UAT.
@@ -1255,7 +1279,6 @@
                     <div className="bg-[#FCE7F3] p-4 hand-card-ui">
                       <div className="flex items-center justify-between">
                         <h4 className="font-marker font-bold text-2xl text-black inline-block">BizDev & Sales</h4>
-                        <span>🤝</span>
                       </div>
                       <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
                         Lead Gen, Cold Outreach, Proposals, Pricing Negotiation, CRM, Order Scheduling.
@@ -1265,7 +1288,6 @@
                     <div className="bg-[#DCFCE7] p-4 hand-card-ui">
                       <div className="flex items-center justify-between">
                         <h4 className="font-marker font-bold text-2xl text-black inline-block">Tech Stack</h4>
-                        <span>💻</span>
                       </div>
                       <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
                         HTML/CSS, Java (OOPs), PostgreSQL, MySQL, Java Swing, AWT, GitHub Copilot.
@@ -1275,13 +1297,21 @@
                     <div className="bg-[#FEF3C7] p-4 hand-card-ui">
                       <div className="flex items-center justify-between">
                         <h4 className="font-marker font-bold text-2xl text-black inline-block">Certifications</h4>
-                        <span>📜</span>
                       </div>
                       <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
                         HCI Design, AWS Cloud Architecting, Cryptography, Spring 101, Innovate X.
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* 3. Bottom Mumbai Coastal Waves & Sun Doodle (+20% size, tilted -1deg below grid) */}
+                <div className="w-full flex justify-center pt-8 pointer-events-none">
+                  <svg className="w-60 sm:w-72 h-24 sm:h-28 text-[#0284C7] opacity-90 transform -rotate-1" viewBox="0 0 160 60" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                    <circle cx="80" cy="22" r="12" stroke="#F59E0B" strokeWidth="3.6" fill="#FEF08A" />
+                    <path d="M 20 45 Q 50 34 80 45 T 140 45" strokeWidth="4" />
+                    <path d="M 30 54 Q 60 43 90 54 T 130 54" strokeWidth="4" />
+                  </svg>
                 </div>
               </div>
             )}
@@ -1290,54 +1320,50 @@
                 5. CONTACT VIEW (MATCHING HAND-CARD THEME & MASCOT)
                ========================================= */}
             {view === 'contact' && (
-              <div className="w-full flex flex-col justify-start items-center py-2 sm:py-4 pb-20 relative">
+              <div className="w-full flex flex-col justify-start items-center py-2 sm:py-4 pb-16 relative">
                 
-                {/* 3 Spread-Out Doodles for Contact View (Outer Gutters) */}
-                {/* 1. Top-Right Soaring Paper Airplane (Far Right Gutter) */}
-                <svg className="hidden xl:block absolute top-0 right-0 w-36 sm:w-48 h-36 sm:h-48 text-[#10B981] pointer-events-none opacity-85 z-0" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                  <path d="M 20 90 Q 60 110 70 70 Q 75 40 45 50 Q 25 58 45 75 T 90 35" stroke="#10B981" strokeWidth="3.5" strokeDasharray="5 5" />
-                  <path d="M 105 18 L 65 38 L 82 45 L 88 65 Z" fill="#D1FAE5" />
-                  <path d="M 105 18 L 82 45" strokeWidth="3" />
-                </svg>
-
-                {/* 2. Top-Left Chat Speech Bubbles (Far Left Gutter) */}
-                <svg className="hidden md:block absolute top-0 left-0 w-32 sm:w-40 h-32 sm:h-40 text-[#F43F5E] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                  <path d="M 18 25 C 18 16, 68 16, 68 25 C 68 38, 48 38, 40 48 L 40 38 L 26 38 C 20 38, 18 32, 18 25 Z" fill="#FFE4E6" />
-                  <circle cx="34" cy="27" r="3" fill="#E11D48" />
-                  <circle cx="44" cy="27" r="3" fill="#E11D48" />
-                  <circle cx="54" cy="27" r="3" fill="#E11D48" />
-                </svg>
-
-                {/* 3. Bottom-Left Flying Mail Envelope (Far Left Gutter) */}
-                <svg className="hidden lg:block absolute bottom-2 left-0 w-36 sm:w-44 h-36 sm:h-44 text-[#3B82F6] pointer-events-none opacity-85 z-0" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
-                  <rect x="25" y="38" width="50" height="34" rx="4" fill="#DBEAFE" />
-                  <path d="M 25 40 L 50 58 L 75 40" strokeWidth="3.5" />
-                  <path d="M 25 50 C 12 40, 8 60, 25 65" stroke="#60A5FA" strokeWidth="3" />
-                  <path d="M 75 50 C 88 40, 92 60, 75 65" stroke="#60A5FA" strokeWidth="3" />
-                </svg>
-
                 <div className="w-full max-w-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 anim-top relative z-10">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#DCFCE7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
-                        Direct Connection
-                      </span>
-                      {/* Cute Hand-drawn Paper Airplane Doodle */}
-                      <svg className="w-6 h-6 text-[#059669] transform rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 2L11 13" />
-                        <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-                      </svg>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    {/* 1. Unique Top-Left Chat Speech Bubbles Doodle (+20% size, tilted +3deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#F43F5E] pointer-events-none opacity-90 flex-shrink-0 transform rotate-3" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                      <path d="M 18 25 C 18 16, 68 16, 68 25 C 68 38, 48 38, 40 48 L 40 38 L 26 38 C 20 38, 18 32, 18 25 Z" fill="#FFE4E6" />
+                      <circle cx="34" cy="27" r="3" fill="#E11D48" />
+                      <circle cx="44" cy="27" r="3" fill="#E11D48" />
+                      <circle cx="54" cy="27" r="3" fill="#E11D48" />
+                    </svg>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#DCFCE7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                          Direct Connection
+                        </span>
+                        {/* Cute Hand-drawn Paper Airplane Doodle */}
+                        <svg className="w-6 h-6 text-[#059669] transform rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 2L11 13" />
+                          <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+                        </svg>
+                      </div>
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] mt-1 leading-tight">
+                        Let's Connect
+                      </h2>
                     </div>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F] mt-1 leading-tight">
-                      Let's Connect
-                    </h2>
                   </div>
-                  <button 
-                    onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
-                  >
-                    Back Home ↶
-                  </button>
+
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    {/* 2. Unique Top-Right Soaring Paper Airplane Doodle (+20% size, tilted -6deg) */}
+                    <svg className="w-18 h-18 sm:w-22 sm:h-22 text-[#10B981] pointer-events-none opacity-90 flex-shrink-0 transform -rotate-6" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+                      <path d="M 20 90 Q 60 110 70 70 Q 75 40 45 50 Q 25 58 45 75 T 90 35" stroke="#10B981" strokeWidth="3.5" strokeDasharray="5 5" />
+                      <path d="M 105 18 L 65 38 L 82 45 L 88 65 Z" fill="#D1FAE5" />
+                      <path d="M 105 18 L 82 45" strokeWidth="3" />
+                    </svg>
+
+                    <button 
+                      onClick={() => setView('home')} 
+                      className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                    >
+                      Back Home ↶
+                    </button>
+                  </div>
                 </div>
 
                 <div className="w-full max-w-2xl bg-white p-6 sm:p-8 hand-card-ui relative anim-bottom">
@@ -1396,6 +1422,16 @@
                       Send Direct Email →
                     </a>
                   </div>
+                </div>
+
+                {/* 3. Bottom Flying Mail Envelope Doodle (+20% size, tilted +2deg below contact card) */}
+                <div className="w-full flex justify-center pt-8 pointer-events-none">
+                  <svg className="w-52 sm:w-64 h-24 sm:h-28 text-[#3B82F6] opacity-90 transform rotate-2" viewBox="0 0 120 60" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round">
+                    <rect x="35" y="16" width="50" height="34" rx="4" fill="#DBEAFE" />
+                    <path d="M 35 18 L 60 36 L 85 18" strokeWidth="3.5" />
+                    <path d="M 35 28 C 22 18, 18 38, 35 43" stroke="#60A5FA" strokeWidth="3" />
+                    <path d="M 85 28 C 98 18, 102 38, 85 43" stroke="#60A5FA" strokeWidth="3" />
+                  </svg>
                 </div>
               </div>
             )}
