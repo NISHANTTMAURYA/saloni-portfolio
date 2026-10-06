@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Arrows Preview</title>
+  <style>
+    body { font-family: sans-serif; background: #FAF7F0; padding: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .card { background: white; border: 2px solid #333; border-radius: 12px; padding: 12px; text-align: center; }
+    img { width: 80px; height: 80px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <h2>Handy-Arrows SVG Library (40 Downloaded)</h2>
+  <div class="grid" id="grid"></div>
+  <script>
+    const ids = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '40', '50', '60', '70', '80', '90', '100', '110', '120', '130'];
+    const grid = document.getElementById('grid');
+    ids.forEach(id => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<img src="public/arrows/${id}.svg" /><br><strong>#${id}</strong>`;
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

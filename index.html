@@ -606,11 +606,11 @@
                         className="w-full h-auto drop-shadow-xl select-none pointer-events-none"
                       />
 
-                      {/* --- 1. TOP-LEFT: FOCUS / GOOD IDEAS + DOWNWARD CURVED ARROW --- */}
-                      <div className="absolute -top-7 sm:-top-9 -left-2 sm:-left-6 lg:-left-10 transform -rotate-3 pointer-events-auto z-10 text-left">
+                      {/* --- 1. TOP-LEFT: FOCUS / GOOD IDEAS + HAND-DRAWN DOODLE ARROW (Ref Style: Wave swoop) --- */}
+                      <div className="absolute -top-7 sm:-top-9 -left-2 sm:-left-6 lg:-left-10 transform -rotate-3 pointer-events-auto z-20 text-left">
                         {/* Doodle bulb / spark line art */}
                         <div className="flex items-center gap-1.5 mb-1">
-                          <svg className="w-5 h-5 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="w-5 h-5 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 18h6" />
                             <path d="M10 22h4" />
                             <path d="M12 2v1" />
@@ -624,17 +624,20 @@
                           <span className="text-[#059669] block">Better</span>
                           <span className="text-[#2563EB] block">Execution.</span>
                         </div>
-                        {/* Arrow curving down-right toward Saloni */}
-                        <div className="mt-1 ml-4">
-                          <svg className="w-10 h-8 sm:w-12 sm:h-9 text-[#2563EB]" viewBox="0 0 50 36" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M 10 4 C 18 10, 30 18, 38 28" />
-                            <path d="M 28 28 L 38 28 L 38 18" />
+                        
+                        {/* Hand-drawn Blue Doodle Arrow (with ample viewBox padding & overflow visible) */}
+                        <div className="mt-1 ml-1 relative z-20 pointer-events-none">
+                          <svg className="w-14 sm:w-16 lg:w-20 h-8 sm:h-9 lg:h-10 text-[#2563EB]" style={{ overflow: 'visible' }} viewBox="0 0 90 45" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Smooth hand-drawn wave curve */}
+                            <path d="M 8 16 C 26 10, 48 16, 68 28" />
+                            {/* Clean V arrowhead */}
+                            <path d="M 54 22 L 70 28 L 60 38" />
                           </svg>
                         </div>
                       </div>
 
-                      {/* --- 2. TOP-RIGHT: ALWAYS ACTIVE + NATURAL CURVED ARROW POINTING TO SALONI --- */}
-                      <div className="absolute -top-7 sm:-top-9 -right-2 sm:-right-6 lg:-right-8 text-left z-10 pointer-events-none">
+                      {/* --- 2. TOP-RIGHT: ALWAYS ACTIVE + HAND-DRAWN DOODLE ARROW (Ref Style: Arched sweep) --- */}
+                      <div className="absolute -top-7 sm:-top-9 -right-2 sm:-right-6 lg:-right-8 text-left z-20 pointer-events-none">
                         <div className="transform rotate-2">
                           <span className="font-marker font-bold text-xs sm:text-sm uppercase tracking-wider text-[#7C3AED] block mb-1">Always Active</span>
                           <p className="font-marker font-bold text-lg sm:text-xl md:text-2xl text-[#1F1F1F] leading-snug">
@@ -644,17 +647,19 @@
                           </p>
                         </div>
                         
-                        {/* Natural hand-drawn arrow pointing down-left toward Saloni */}
-                        <div className="mt-2 ml-2">
-                          <svg className="w-12 h-10 sm:w-14 sm:h-11 text-[#E11D48]" viewBox="0 0 55 42" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M 42 6 C 30 14, 18 24, 12 36" />
-                            <path d="M 24 35 L 12 36 L 14 24" />
+                        {/* Hand-drawn Red Doodle Arrow (with ample viewBox padding & overflow visible) */}
+                        <div className="mt-1 ml-1 relative z-20">
+                          <svg className="w-14 sm:w-16 lg:w-20 h-10 sm:h-11 lg:h-12 text-[#E11D48]" style={{ overflow: 'visible' }} viewBox="0 0 80 60" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Organic hand-drawn arc loop */}
+                            <path d="M 68 8 C 52 8, 28 22, 18 46" />
+                            {/* Clean hand-drawn arrowhead */}
+                            <path d="M 32 40 L 17 48 L 18 32" />
                           </svg>
                         </div>
                       </div>
 
-                      {/* --- 3. BOTTOM-RIGHT: CHAI + CODE + CAT + PROPER ARROW POINTING TO CAT --- */}
-                      <div className="absolute -bottom-8 sm:-bottom-10 -right-2 sm:-right-6 lg:-right-8 z-10 pointer-events-none text-right">
+                      {/* --- 3. BOTTOM-RIGHT: CHAI + CODE + CAT + HAND-DRAWN DOODLE ARROW (Ref Style: Downward curve) --- */}
+                      <div className="absolute -bottom-8 sm:-bottom-10 -right-2 sm:-right-6 lg:-right-8 z-20 pointer-events-none text-right">
                         <div className="flex flex-col items-end font-marker font-bold text-lg sm:text-xl md:text-2xl leading-tight transform -rotate-1">
                           <span className="text-[#92400E]">Chai</span>
                           <span className="text-gray-400 font-bold text-xs my-0.5">+</span>
@@ -663,26 +668,31 @@
                           <span className="text-[#BE185D]">Cat</span>
                         </div>
 
-                        {/* Arrow curving down-left pointing directly toward the sleeping cat */}
-                        <div className="flex justify-end mt-1.5 mr-1">
-                          <svg className="w-11 h-9 sm:w-13 sm:h-10 text-[#EC4899]" viewBox="0 0 50 38" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M 38 6 C 28 16, 18 24, 8 32" />
-                            <path d="M 20 31 L 8 32 L 10 20" />
+                        {/* Hand-drawn Pink Doodle Arrow (with ample viewBox padding & overflow visible) */}
+                        <div className="flex justify-end mt-1 mr-1 relative z-20">
+                          <svg className="w-14 sm:w-16 lg:w-20 h-9 sm:h-10 lg:h-11 text-[#EC4899]" style={{ overflow: 'visible' }} viewBox="0 0 80 50" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Smooth downward doodle curve */}
+                            <path d="M 65 8 C 50 14, 32 26, 16 38" />
+                            {/* Hand-drawn V arrowhead */}
+                            <path d="M 30 30 L 15 39 L 26 46" />
                           </svg>
                         </div>
                       </div>
 
-                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY + PROPER ARROW POINTING TO CAKES --- */}
-                      <div className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-10 pointer-events-none text-left">
+                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY + HAND-DRAWN DOODLE ARROW (Ref Style: Upward swoop) --- */}
+                      <div className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-20 pointer-events-none text-left">
                         <div className="transform rotate-2 leading-tight font-marker font-bold">
                           <p className="text-[#BE185D] text-lg sm:text-xl md:text-2xl">Sweetscape</p>
                           <p className="text-sm sm:text-base text-[#78350F] font-marker font-bold">Home Bakery</p>
                         </div>
-                        {/* Arrow curving up-right toward the cakes and mixing bowl */}
-                        <div className="mt-1.5 ml-3">
-                          <svg className="w-10 h-8 sm:w-12 sm:h-9 text-[#D97706]" viewBox="0 0 48 36" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M 8 28 C 18 24, 28 16, 38 8" />
-                            <path d="M 26 8 L 38 8 L 38 20" />
+                        
+                        {/* Hand-drawn Orange Doodle Arrow (with ample viewBox padding & overflow visible) */}
+                        <div className="mt-1 ml-2 relative z-20">
+                          <svg className="w-14 sm:w-16 lg:w-20 h-9 sm:h-10 lg:h-11 text-[#D97706]" style={{ overflow: 'visible' }} viewBox="0 0 80 50" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Smooth upward swoop */}
+                            <path d="M 10 40 C 26 34, 46 22, 64 12" />
+                            {/* Hand-drawn V arrowhead pointing up-right */}
+                            <path d="M 50 10 L 66 11 L 58 24" />
                           </svg>
                         </div>
                       </div>
@@ -736,39 +746,39 @@
             {/* =========================================
                 2. PROJECTS VIEW (MATCHING HAND-CARD THEME & MASCOT)
                ========================================= */}
+            {/* =========================================
+                2. PROJECTS VIEW (MASCOT NEXT TO TITLE, NO BACK CARDS)
+               ========================================= */}
             {view === 'projects' && (
               <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20">
-                {/* Header with Cursor-Tracking Mascot Companion */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 anim-top">
+                {/* Header with Mascot right next to the title text */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 anim-top">
                   <div>
                     <span className="bg-[#DCEBFA] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Selected Works
                     </span>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
-                      Featured Projects
-                    </h2>
-                  </div>
-
-                  {/* Interactive Mascot Companion that tracks cursor */}
-                  <div className="flex items-center gap-3 bg-white/90 p-2.5 sm:p-3 hand-card-ui shadow-sm">
-                    <Mascot 
-                      directions="mascots/saloni-directions.webp" 
-                      reactions="mascots/saloni-reactions.webp" 
-                      size={76} 
-                      label="Saloni Mascot"
-                    />
-                    <div className="text-left">
-                      <p className="font-marker font-bold text-base sm:text-lg text-black leading-tight">
-                        "Click 'Visit Live' to test my projects!"
-                      </p>
-                      <button 
-                        onClick={() => setView('home')} 
-                        className="mt-1 bg-[#18181B] text-white font-marker text-sm sm:text-base px-3.5 py-1 rounded-full hover:bg-black transition-transform hover:scale-105"
-                      >
-                        Back Home ↶
-                      </button>
+                    <div className="flex items-center gap-3 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F]">
+                        Featured Projects
+                      </h2>
+                      {/* Tech Saloni with glasses right next to title */}
+                      <div title="Tech Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0">
+                        <Mascot 
+                          directions="mascots/saloni-tech-directions.webp" 
+                          reactions="mascots/saloni-tech-reactions.webp" 
+                          size={58} 
+                          label="Tech Saloni"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  <button 
+                    onClick={() => setView('home')} 
+                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                  >
+                    Back Home ↶
+                  </button>
                 </div>
 
                 {/* Projects Grid */}
@@ -851,41 +861,38 @@
             )}
 
             {/* =========================================
-                3. EXPERIENCE VIEW (MATCHING HAND-CARD THEME & MASCOT)
+                3. EXPERIENCE VIEW (MASCOT NEXT TO TITLE, NO BACK CARDS)
                ========================================= */}
             {view === 'experience' && (
               <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-24">
-                {/* Header with Mascot Companion */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 anim-top">
+                {/* Header with Baker/Founder Saloni right next to the title text */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 anim-top">
                   <div>
                     <span className="bg-[#FEF3C7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Career & Roles
                     </span>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
-                      Experience & Leadership
-                    </h2>
-                  </div>
-
-                  {/* Interactive Mascot Companion that tracks cursor */}
-                  <div className="flex items-center gap-3 bg-white/90 p-2.5 sm:p-3 hand-card-ui shadow-sm">
-                    <Mascot 
-                      directions="mascots/saloni-directions.webp" 
-                      reactions="mascots/saloni-reactions.webp" 
-                      size={76} 
-                      label="Saloni Mascot"
-                    />
-                    <div className="text-left">
-                      <p className="font-marker font-bold text-base sm:text-lg text-black leading-tight">
-                        "From client sales to founding Sweetscape!"
-                      </p>
-                      <button 
-                        onClick={() => setView('home')} 
-                        className="mt-1 bg-[#18181B] text-white font-marker text-sm sm:text-base px-3.5 py-1 rounded-full hover:bg-black transition-transform hover:scale-105"
-                      >
-                        Back Home ↶
-                      </button>
+                    <div className="flex items-center gap-3 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F]">
+                        Experience & Leadership
+                      </h2>
+                      {/* Baker/Sweetscape Saloni Mascot with ribbon bow right next to title */}
+                      <div title="Baker Saloni" className="transform hover:scale-105 transition-transform flex-shrink-0">
+                        <Mascot 
+                          directions="mascots/saloni-baker-directions.webp" 
+                          reactions="mascots/saloni-baker-reactions.webp" 
+                          size={58} 
+                          label="Baker Saloni"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  <button 
+                    onClick={() => setView('home')} 
+                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
+                  >
+                    Back Home ↶
+                  </button>
                 </div>
 
                 {/* Experience Cards */}
@@ -991,25 +998,36 @@
                ========================================= */}
             {view === 'about' && (
               <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-5 anim-top">
+                {/* Header with Playful Tuxedo Cat mascot right next to title */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5 anim-top">
                   <div>
                     <span className="bg-[#FCE7F3] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Background & Profile
                     </span>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
-                      About Saloni Bhosale
-                    </h2>
+                    <div className="flex items-center gap-3 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F]">
+                        About Saloni Bhosale
+                      </h2>
+                      {/* Playful Cat mascot tracking cursor */}
+                      <div title="Purring Kitty" className="transform hover:scale-105 transition-transform flex-shrink-0">
+                        <Mascot 
+                          directions="mascots/cat-directions.webp" 
+                          reactions="mascots/cat-reactions.webp" 
+                          size={58} 
+                          label="Cat Companion"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <button 
                     onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105"
+                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
                   >
                     Back Home ↶
                   </button>
                 </div>
 
-                {/* Character Banner - EXACT SAME HAND-CARD-UI THEME WITH CURSOR-TRACKING MASCOT */}
+                {/* Character Banner */}
                 <div className="w-full bg-[#FAF7F0] p-5 sm:p-6 hand-card-ui mb-6 flex flex-col sm:flex-row items-center gap-6 anim-top">
                   <div className="relative flex-shrink-0 flex flex-col items-center">
                     <Mascot 
@@ -1106,13 +1124,24 @@
                     <span className="bg-[#DCFCE7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
                       Direct Connection
                     </span>
-                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
-                      Let's Connect & Collaborate
-                    </h2>
+                    <div className="flex items-center gap-3 mt-1">
+                      <h2 className="font-marker font-bold text-4xl sm:text-5xl md:text-6xl text-[#1F1F1F]">
+                        Let's Connect
+                      </h2>
+                      {/* Mascot right next to title */}
+                      <div title="Saloni Mascot" className="transform hover:scale-105 transition-transform flex-shrink-0">
+                        <Mascot 
+                          directions="mascots/saloni-directions.webp" 
+                          reactions="mascots/saloni-reactions.webp" 
+                          size={58} 
+                          label="Saloni Mascot"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <button 
                     onClick={() => setView('home')} 
-                    className="bg-[#18181B] text-white font-marker text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105"
+                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105 shadow-sm"
                   >
                     Back Home ↶
                   </button>
