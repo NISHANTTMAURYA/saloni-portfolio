@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saloni Bhosale - ECS Engineer, UI/UX, Sales & Founder</title>
+  
+  <!-- Authentic Hand-Drawn Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Caveat:wght@600;700&family=Gochi+Hand&family=Kalam:wght@400;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            hand: ['"Patrick Hand"', '"Architects Daughter"', '"Kalam"', 'cursive'],
+            marker: ['"Patrick Hand"', '"Architects Daughter"', '"Caveat"', 'cursive'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            cream: '#FAF7F0',
+            cardBlue: '#DCEBFA',
+            cardYellow: '#FEF3C7',
+            cardPink: '#FCE7F3',
+            cardGreen: '#DCFCE7',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Consistent Hand-Drawn Aesthetic across entire portfolio */
+    html {
+      min-height: 100%;
+      background-color: #FAF7F0;
+      color: #1F1F1F;
+      font-family: 'Patrick Hand', 'Architects Daughter', cursive, sans-serif;
+      scroll-behavior: smooth;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      width: 100%;
+      background-color: #FAF7F0;
+      color: #1F1F1F;
+      font-family: 'Patrick Hand', 'Architects Daughter', cursive, sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      user-select: none;
+    }
+
+    /* Cozy Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FAF7F0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #E5E7EB;
+      border: 1.8px solid #1F1F1F;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #FEE053;
+    }
+
+    /* UNIFIED HANDMADE CARD THEME (All cards must share this exact organic hand-drawn border) */
+    .hand-card-ui {
+      border: 2px solid #1F1F1F;
+      border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+      box-shadow: 3px 4px 0px #1F1F1F;
+      transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .hand-card-ui:hover {
+      transform: translate(-2px, -3px);
+      box-shadow: 5px 6px 0px #1F1F1F;
+    }
+
+    .hand-border-soft {
+      border: 1.8px solid #1F1F1F;
+      border-radius: 18px 8px 16px 10px / 10px 18px 8px 16px;
+      box-shadow: 2px 3px 0px #1F1F1F;
+    }
+
+    /* Washi tape pin for notes */
+    .washi-tape {
+      background: rgba(254, 240, 138, 0.85);
+      border-top: 1px dashed rgba(0,0,0,0.25);
+      border-bottom: 1px dashed rgba(0,0,0,0.25);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Static hand-drawn styling without bouncy animations */
+
+    /* Entrance Animations */
+    @keyframes animInTop {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .anim-top {
+      animation: animInTop 0.4s ease-out forwards;
+    }
+
+    @keyframes animInLeft {
+      0% { opacity: 0; transform: translateX(-30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .anim-left {
+      animation: animInLeft 0.45s ease-out forwards;
+    }
+
+    @keyframes animInRight {
+      0% { opacity: 0; transform: translateX(30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .anim-right {
+      animation: animInRight 0.45s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen w-full bg-[#FAF7F0] text-[#1F1F1F] p-3 sm:p-5 lg:p-7 2xl:p-8 flex flex-col justify-between overflow-x-hidden">
+  <div id="root" class="min-h-full w-full flex flex-col flex-1"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* --- PAGE-MASCOT COMPONENT ENGINE --- */
+    const DIRECTIONS = [
+      'up-left',
+      'up',
+      'up-right',
+      'left',
+      'center',
+      'right',
+      'down-left',
+      'down',
+      'down-right',
+    ];
+
+    const REACTIONS = [
+      'blink',
+      'heart',
+      'sparkle',
+      'surprised',
+      'wink',
+      'bashful',
+      'sleepy',
+      'dizzy',
+      'delighted',
+    ];
+
+    const CLOCKWISE = [
+      'right',
+      'down-right',
+      'down',
+      'down-left',
+      'left',
+      'up-left',
+      'up',
+      'up-right',
+    ];
+
+    const SECTOR = (Math.PI * 2) / CLOCKWISE.length;
+    const HYSTERESIS = 0.12;
+    const DEAD_ZONE = 60;
+
+    const PAYOFFS = ['heart', 'sparkle', 'delighted'];
+    const BOOP_PAYOFF = 120;
+    const BOOP_END = 560;
+    const SQUASH_MS = 420;
+    const DIZZY_AFTER = 4;
+    const DIZZY_WINDOW = 1600;
+    const DIZZY_END = 1100;
+
+    const SQUASH_KEYFRAMES = [
+      { transform: 'scale(1, 1)', easing: 'ease-in' },
+      { transform: 'scale(1.10, 0.86)', offset: 0.18, easing: 'ease-out' },
+      { transform: 'scale(0.95, 1.08)', offset: 0.45, easing: 'ease-in-out' },
+      { transform: 'scale(1.03, 0.97)', offset: 0.72, easing: 'ease-in-out' },
+      { transform: 'scale(1, 1)' },
+    ];
+
+    function cellPos(index) {
+      return { backgroundPosition: `${(index % 3) * 50}% ${Math.floor(index / 3) * 50}%` };
+    }
+
+    function wrapAngle(angle) {
+      return Math.atan2(Math.sin(angle), Math.cos(angle));
+    }
+
+    const mascotLayerStyle = {
+      position: 'absolute',
+      inset: 0,
+      backgroundSize: '300% 300%',
+      backgroundRepeat: 'no-repeat',
+    };
+
+    function Mascot({ directions, reactions, size = 100, className = '', label = 'Saloni Mascot' }) {
+      const buttonRef = useRef(null);
+      const squashRef = useRef(null);
+      const timersRef = useRef([]);
+      const boopsRef = useRef({ count: 0, at: 0 });
+      const [direction, setDirection] = useState('center');
+      const [reaction, setReaction] = useState(null);
+
+      useEffect(() => {
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          return;
+        }
+
+        let sector = -1;
+        let pointer = null;
+
+        const aim = () => {
+          const button = buttonRef.current;
+          if (!button || !pointer) return;
+
+          const box = button.getBoundingClientRect();
+          const dx = pointer.x - (box.left + box.width / 2);
+          const dy = pointer.y - (box.top + box.height / 2);
+
+          if (Math.hypot(dx, dy) < DEAD_ZONE) {
+            sector = -1;
+            setDirection('center');
+            return;
+          }
+
+          const angle = Math.atan2(dy, dx);
+          if (sector !== -1 && Math.abs(wrapAngle(angle - sector * SECTOR)) < SECTOR / 2 + HYSTERESIS) {
+            return;
+          }
+
+          sector = (Math.round(angle / SECTOR) + CLOCKWISE.length) % CLOCKWISE.length;
+          setDirection(CLOCKWISE[sector]);
+        };
+
+        const onPointerMove = (event) => {
+          pointer = { x: event.clientX, y: event.clientY };
+          aim();
+        };
+
+        window.addEventListener('pointermove', onPointerMove, { passive: true });
+        window.addEventListener('scroll', aim, { passive: true });
+
+        return () => {
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('scroll', aim);
+        };
+      }, []);
+
+      useEffect(() => {
+        return () => {
+          timersRef.current.forEach(window.clearTimeout);
+        };
+      }, []);
+
+      const boop = () => {
+        timersRef.current.forEach(window.clearTimeout);
+        timersRef.current = [];
+
+        const later = (ms, next) => {
+          timersRef.current.push(window.setTimeout(() => setReaction(next), ms));
+        };
+
+        const now = Date.now();
+        const boops = boopsRef.current;
+        boops.count = now - boops.at < DIZZY_WINDOW ? boops.count + 1 : 1;
+        boops.at = now;
+
+        if (boops.count >= DIZZY_AFTER) {
+          boops.count = 0;
+          setReaction('dizzy');
+          later(DIZZY_END, null);
+        } else {
+          setReaction('blink');
+          later(BOOP_PAYOFF, PAYOFFS[(boops.count - 1) % PAYOFFS.length]);
+          later(BOOP_END, null);
+        }
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          return;
+        }
+
+        squashRef.current?.animate(SQUASH_KEYFRAMES, { duration: SQUASH_MS, easing: 'linear' });
+      };
+
+      return (
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={boop}
+          aria-label={`Boop ${label}`}
+          className={`cursor-pointer ${className}`}
+          style={{
+            position: 'relative',
+            display: 'block',
+            flexShrink: 0,
+            width: size,
+            height: size,
+            padding: 0,
+            border: 0,
+            background: 'transparent',
+            appearance: 'none',
+            userSelect: 'none',
+          }}
+        >
+          <span
+            ref={squashRef}
+            style={{ position: 'relative', display: 'block', width: '100%', height: '100%', transformOrigin: '50% 78%' }}
+          >
+            <span
+              style={{
+                ...mascotLayerStyle,
+                backgroundImage: `url(${directions})`,
+                ...cellPos(DIRECTIONS.indexOf(direction)),
+                opacity: reaction ? 0 : 1,
+              }}
+            />
+            <span
+              style={{
+                ...mascotLayerStyle,
+                backgroundImage: `url(${reactions})`,
+                ...cellPos(REACTIONS.indexOf(reaction || 'blink')),
+                opacity: reaction ? 1 : 0,
+              }}
+            />
+          </span>
+        </button>
+      );
+    }
+
+    const navItems = [
+      { label: 'Home', key: 'home' },
+      { label: 'About', key: 'about' },
+      { label: 'Projects', key: 'projects' },
+      { label: 'Experience', key: 'experience' },
+      { label: 'Contact', key: 'contact' }
+    ];
+
+    function App() {
+      const [view, setView] = useState('home'); // 'home' | 'projects' | 'experience' | 'about' | 'contact'
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      const [mascotBubble, setMascotBubble] = useState("Hey there! Welcome to my space (boop my head!)");
+      const [easterEggText, setEasterEggText] = useState(null);
+
+      // Scroll to top whenever page view changes
+      useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, [view]);
+
+      const funQuotes = [
+        "Chai + Code + Cat is the ultimate combo.",
+        "Home baker & engineer with a passion for sleek UI/UX.",
+        "Currently fourth-year ECS at Fr. CRCE Mumbai.",
+        "Ask me about our Medallion SQL pipelines or custom cakes!",
+        "Good ideas, even better execution!"
+      ];
+
+      const triggerRandomQuote = () => {
+        const next = funQuotes[Math.floor(Math.random() * funQuotes.length)];
+        setMascotBubble(next);
+      };
+
+      return (
+        <div className="min-h-full w-full flex flex-col justify-between flex-1 max-w-7xl mx-auto">
+          
+          {/* --- TOP NAVBAR WITH CURSOR-TRACKING CHIBI MASCOT --- */}
+          <header className="flex flex-col gap-2.5 py-2 sm:py-3 anim-top relative z-30">
+            <div className="flex items-center justify-between w-full">
+              {/* Logo + Interactive Mascot Head that tracks cursor! */}
+              <div 
+                className="flex items-center gap-2 cursor-pointer group"
+                onClick={() => { setView('home'); setMobileMenuOpen(false); }}
+              >
+                <span className="font-marker font-bold text-3xl sm:text-4xl text-[#1F1F1F] tracking-wide">
+                  Saloni
+                </span>
+                
+                {/* Chibi Saloni Head that turns toward cursor and reacts when booped! */}
+                <div title="Boop Saloni!" className="transform group-hover:scale-105 transition-transform">
+                  <Mascot 
+                    directions="mascots/saloni-directions.webp" 
+                    reactions="mascots/saloni-reactions.webp" 
+                    size={46} 
+                    label="Saloni Header Mascot"
+                  />
+                </div>
+              </div>
+
+              {/* Desktop Navbar Links */}
+              <nav className="hidden md:flex items-center gap-6 lg:gap-10 text-xl lg:text-2xl font-marker font-medium text-[#27272A]">
+                {navItems.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setView(item.key)}
+                    className="relative px-3 py-1 transition-colors hover:text-black"
+                  >
+                    <span>{item.label}</span>
+                    {view === item.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-2 bg-[#FEE053] opacity-90 -z-10 rounded-full transform -rotate-1 scale-105"></span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Top Right: Let's Talk CTA with two-line radiating doodle accent */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="relative group">
+                  {/* Top-Left Double Radiating Line Ticks */}
+                  <div className="hidden sm:block absolute -top-3 -left-3 pointer-events-none text-[#1F1F1F]">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+                      <line x1="6" y1="18" x2="16" y2="8" />
+                      <line x1="10" y1="22" x2="20" y2="12" />
+                    </svg>
+                  </div>
+                  {/* Top-Right Double Radiating Line Ticks (matching media_1791302083447.png) */}
+                  <div className="hidden sm:block absolute -top-3 -right-3 pointer-events-none text-[#1F1F1F]">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+                      <line x1="18" y1="18" x2="8" y2="8" />
+                      <line x1="14" y1="22" x2="4" y2="12" />
+                    </svg>
+                  </div>
+                  {/* Bottom-Left Double Radiating Line Ticks */}
+                  <div className="hidden sm:block absolute -bottom-3 -left-3 pointer-events-none text-[#1F1F1F]">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+                      <line x1="6" y1="6" x2="16" y2="16" />
+                      <line x1="10" y1="2" x2="20" y2="12" />
+                    </svg>
+                  </div>
+                  {/* Bottom-Right Double Radiating Line Ticks */}
+                  <div className="hidden sm:block absolute -bottom-3 -right-3 pointer-events-none text-[#1F1F1F]">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="8" y2="16" />
+                      <line x1="14" y1="2" x2="4" y2="12" />
+                    </svg>
+                  </div>
+
+                  <button
+                    onClick={() => { setView(view === 'contact' ? 'home' : 'contact'); setMobileMenuOpen(false); }}
+                    className="bg-[#18181B] text-white font-marker text-lg sm:text-xl lg:text-2xl px-5 sm:px-7 py-1.5 sm:py-2 rounded-full hover:bg-black transition-all transform active:scale-95 shadow-md flex items-center gap-2"
+                  >
+                    <span>{view === 'contact' ? 'Back Home ↶' : "Let's Talk →"}</span>
+                  </button>
+                </div>
+
+                {/* Mobile Menu Hamburger Button */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="md:hidden p-2 bg-white hand-card-ui font-marker font-bold text-lg text-black active:scale-95 flex items-center justify-center min-w-[42px] min-h-[42px]"
+                  aria-label="Toggle Navigation Menu"
+                >
+                  {mobileMenuOpen ? '✕' : '☰'}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Horizontal Pill Bar */}
+            <div className="md:hidden flex items-center gap-2 overflow-x-auto py-1 px-0.5 scrollbar-none text-base sm:text-lg font-marker">
+              {navItems.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => { setView(item.key); setMobileMenuOpen(false); }}
+                  className={`px-3.5 py-1 rounded-full whitespace-nowrap transition-all border ${
+                    view === item.key 
+                      ? 'bg-[#FEE053] border-[#1F1F1F] shadow-[2px_2px_0px_#1F1F1F] font-bold text-black' 
+                      : 'bg-white/90 border-black/25 text-[#374151]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile Dropdown Drawer */}
+            {mobileMenuOpen && (
+              <div className="md:hidden w-full bg-white p-4 hand-card-ui mt-1 space-y-1 anim-top shadow-xl">
+                <div className="flex flex-col gap-1.5 font-marker text-xl">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => { setView(item.key); setMobileMenuOpen(false); }}
+                      className={`text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors ${
+                        view === item.key 
+                          ? 'bg-[#FEF3C7] font-bold text-black border border-black/30 shadow-sm' 
+                          : 'hover:bg-amber-50 text-[#374151]'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {view === item.key && <span>•</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </header>
+
+          {/* --- MAIN STAGE --- */}
+          <main className="flex-1 my-auto flex flex-col items-center justify-center w-full relative py-2 sm:py-4">
+            
+            {/* =========================================
+                1. HOME VIEW (CLEAN, FOCUSED, ZERO OVERLAPS)
+               ========================================= */}
+            {view === 'home' && (
+              <div className="w-full my-auto">
+                
+                {/* Hero Grid */}
+                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center py-2 sm:py-4 lg:py-6">
+                  
+                  {/* Left Column: Heading, Colorful Highlights, Bio, Quick Links */}
+                  <div className="lg:col-span-5 space-y-4 text-left anim-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F]">Hey!</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {/* "I'm Saloni," with authentic yellow highlighter box */}
+                      <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-[#1F1F1F] flex items-baseline flex-wrap gap-x-2 sm:gap-x-3">
+                        <span className="font-marker font-extrabold">I'm</span>
+                        
+                        {/* Authentic Yellow Highlighter Box */}
+                        <span className="relative inline-block bg-[#FEE053] px-3 sm:px-4 py-0.5 sm:py-1 rounded-md transform -rotate-1 text-[#18181B] font-marker font-bold shadow-sm mx-1">
+                          <span>Saloni,</span>
+                          
+                          {/* 3 Radiating Doodle Ticks at Top-Right */}
+                          <svg 
+                            className="absolute -top-3.5 -right-3.5 w-6 h-6 text-[#1F1F1F] pointer-events-none" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2.5" 
+                            strokeLinecap="round"
+                          >
+                            <line x1="4" y1="20" x2="16" y2="6" />
+                            <line x1="2" y1="12" x2="12" y2="2" />
+                            <line x1="12" y1="22" x2="22" y2="16" />
+                          </svg>
+                        </span>
+                      </h1>
+                      
+                      {/* Subtitle with organic red squiggly underline */}
+                      <h2 className="font-marker text-3xl sm:text-4xl md:text-5xl text-[#1F1F1F] leading-tight pt-1">
+                        a builder, developer and<br/>
+                        <span className="relative inline-block">
+                          problem solver.
+                          <svg className="absolute -bottom-2 sm:-bottom-2.5 left-0 w-full h-3.5 sm:h-4 text-[#EF4444]" viewBox="0 0 260 15" fill="none" preserveAspectRatio="none">
+                            <path d="M 2 8 Q 20 2 40 8 T 80 8 T 120 8 T 160 8 T 200 8 T 240 8 T 258 8" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+                          </svg>
+                        </span>
+                      </h2>
+                    </div>
+
+                    {/* Bio with Colorful Highlights */}
+                    <p className="font-hand text-xl sm:text-2xl md:text-3xl text-[#374151] max-w-lg leading-relaxed pt-1">
+                      Fourth-year <span className="text-[#2563EB] font-bold">ECS Engineering</span> student at Fr. CRCE.<br/>
+                      I combine <span className="text-[#059669] font-bold">web dev</span> & <span className="text-[#7C3AED] font-bold">SQL analytics</span> with <span className="text-[#D97706] font-bold">client sales</span>, <span className="text-[#0284C7] font-bold">UI/UX design</span>, and running my home bakery <span className="text-[#E11D48] font-bold">Sweetscape</span>.
+                    </p>
+
+                    {/* Action Button */}
+                    <div className="pt-2">
+                      <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+                        <button
+                          onClick={() => setView('projects')}
+                          className="bg-[#18181B] text-white font-marker font-bold text-xl sm:text-2xl md:text-3xl px-7 sm:px-9 py-2.5 sm:py-3 rounded-full hover:bg-black transition-all shadow-md flex items-center gap-2.5 sm:gap-3 transform hover:-translate-y-0.5 active:scale-95"
+                        >
+                          <span>Check My Work</span>
+                          <span>→</span>
+                        </button>
+
+                        <div className="flex items-center gap-1.5 transform rotate-3 sm:rotate-6">
+                          <svg className="w-7 h-7 text-[#E11D48]" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <path d="M 6 22 C 14 20 22 14 26 6" />
+                            <path d="M 18 6 L 26 6 L 26 14" />
+                          </svg>
+                          <span className="font-marker text-lg sm:text-xl text-[#E11D48] font-bold whitespace-nowrap">
+                            explore pages!
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Character with Colorful Cards & Arrows (ZERO OVERLAP) */}
+                  <div className="lg:col-span-7 flex justify-center items-center relative anim-right py-8 lg:py-6">
+                    <div className="relative w-full max-w-[340px] sm:max-w-[460px] lg:max-w-[530px] 2xl:max-w-[580px] mx-auto px-4 sm:px-6">
+                      
+                      {/* Character Sticker Image */}
+                      <img 
+                        src="avatar.png" 
+                        onError={(e) => { e.currentTarget.src = 'Cozy Pink Study Baking Sticker.png'; }}
+                        alt="Saloni - Cozy Study & Baking" 
+                        className="w-full h-auto drop-shadow-xl select-none pointer-events-none"
+                      />
+
+                      {/* --- 1. TOP-LEFT: FOCUS / GOOD IDEAS + DOWNWARD CURVED ARROW --- */}
+                      <div className="absolute -top-7 sm:-top-9 -left-2 sm:-left-6 lg:-left-10 transform -rotate-3 pointer-events-auto z-10 text-left">
+                        {/* Doodle bulb / spark line art */}
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <svg className="w-5 h-5 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 18h6" />
+                            <path d="M10 22h4" />
+                            <path d="M12 2v1" />
+                            <path d="M12 7a5 5 0 0 1 5 5c0 2-1 3.5-2 4.5h-6C8 15.5 7 14 7 12a5 5 0 0 1 5-5z" />
+                          </svg>
+                          <span className="font-marker font-bold text-xs sm:text-sm uppercase tracking-wider text-[#D97706]">Focus</span>
+                        </div>
+                        <div className="font-marker font-bold text-lg sm:text-xl md:text-2xl leading-snug tracking-wide">
+                          <span className="text-[#E11D48] block">Good</span>
+                          <span className="text-[#D97706] block">Ideas,</span>
+                          <span className="text-[#059669] block">Better</span>
+                          <span className="text-[#2563EB] block">Execution.</span>
+                        </div>
+                        {/* Arrow curving down-right toward Saloni */}
+                        <div className="mt-1 ml-4">
+                          <svg className="w-10 h-8 sm:w-12 sm:h-9 text-[#2563EB]" viewBox="0 0 50 36" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M 10 4 C 18 10, 30 18, 38 28" />
+                            <path d="M 28 28 L 38 28 L 38 18" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* --- 2. TOP-RIGHT: ALWAYS ACTIVE + NATURAL CURVED ARROW POINTING TO SALONI --- */}
+                      <div className="absolute -top-7 sm:-top-9 -right-2 sm:-right-6 lg:-right-8 text-left z-10 pointer-events-none">
+                        <div className="transform rotate-2">
+                          <span className="font-marker font-bold text-xs sm:text-sm uppercase tracking-wider text-[#7C3AED] block mb-1">Always Active</span>
+                          <p className="font-marker font-bold text-lg sm:text-xl md:text-2xl text-[#1F1F1F] leading-snug">
+                            Probably <span className="text-[#E11D48]">baking</span><br/>
+                            or <span className="text-[#2563EB]">building</span><br/>
+                            <span className="text-[#059669]">something cool...</span>
+                          </p>
+                        </div>
+                        
+                        {/* Natural hand-drawn arrow pointing down-left toward Saloni */}
+                        <div className="mt-2 ml-2">
+                          <svg className="w-12 h-10 sm:w-14 sm:h-11 text-[#E11D48]" viewBox="0 0 55 42" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M 42 6 C 30 14, 18 24, 12 36" />
+                            <path d="M 24 35 L 12 36 L 14 24" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* --- 3. BOTTOM-RIGHT: CHAI + CODE + CAT + PROPER ARROW POINTING TO CAT --- */}
+                      <div className="absolute -bottom-8 sm:-bottom-10 -right-2 sm:-right-6 lg:-right-8 z-10 pointer-events-none text-right">
+                        <div className="flex flex-col items-end font-marker font-bold text-lg sm:text-xl md:text-2xl leading-tight transform -rotate-1">
+                          <span className="text-[#92400E]">Chai</span>
+                          <span className="text-gray-400 font-bold text-xs my-0.5">+</span>
+                          <span className="text-[#1D4ED8]">Code</span>
+                          <span className="text-gray-400 font-bold text-xs my-0.5">+</span>
+                          <span className="text-[#BE185D]">Cat</span>
+                        </div>
+
+                        {/* Arrow curving down-left pointing directly toward the sleeping cat */}
+                        <div className="flex justify-end mt-1.5 mr-1">
+                          <svg className="w-11 h-9 sm:w-13 sm:h-10 text-[#EC4899]" viewBox="0 0 50 38" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M 38 6 C 28 16, 18 24, 8 32" />
+                            <path d="M 20 31 L 8 32 L 10 20" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY + PROPER ARROW POINTING TO CAKES --- */}
+                      <div className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-10 pointer-events-none text-left">
+                        <div className="transform rotate-2 leading-tight font-marker font-bold">
+                          <p className="text-[#BE185D] text-lg sm:text-xl md:text-2xl">Sweetscape</p>
+                          <p className="text-sm sm:text-base text-[#78350F] font-marker font-bold">Home Bakery</p>
+                        </div>
+                        {/* Arrow curving up-right toward the cakes and mixing bowl */}
+                        <div className="mt-1.5 ml-3">
+                          <svg className="w-10 h-8 sm:w-12 sm:h-9 text-[#D97706]" viewBox="0 0 48 36" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M 8 28 C 18 24, 28 16, 38 8" />
+                            <path d="M 26 8 L 38 8 L 38 20" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Hand-drawn accent mark */}
+                      <div className="absolute top-[35%] -left-2 sm:-left-4 pointer-events-none text-xl sm:text-2xl text-black">
+                        ✦
+                      </div>
+
+                      {/* Steaming Chai Interactive Mug */}
+                      <div 
+                        onClick={() => setEasterEggText("Fresh warm Masala Chai")}
+                        className="absolute bottom-[32%] left-[34%] cursor-pointer pointer-events-auto"
+                        title="Click for Chai"
+                      >
+                        <div className="relative w-6 h-6 flex justify-center">
+                          <span className="absolute -top-3 left-1 w-1.5 h-3.5 bg-gray-400/60 rounded-full blur-[0.6px]"></span>
+                          <span className="absolute -top-4 right-1 w-1.5 h-4 bg-gray-400/50 rounded-full blur-[0.6px]"></span>
+                        </div>
+                      </div>
+
+                      {/* Sleeping Cat Interactive Tap */}
+                      <div 
+                        onClick={() => setEasterEggText("Sleeping tuxedo kitty purring...")}
+                        className="absolute bottom-[6%] left-[54%] cursor-pointer pointer-events-auto text-[#1F1F1F] font-marker font-bold"
+                        title="Click to pet the cat"
+                      >
+                        <span className="absolute -top-4 left-0 text-xs pointer-events-none">z</span>
+                        <span className="absolute -top-7 left-2.5 text-sm pointer-events-none">Z</span>
+                      </div>
+
+                      {/* Interactive Easter Egg Popup */}
+                      {easterEggText && (
+                        <div 
+                          onClick={() => setEasterEggText(null)}
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 hand-card-ui text-center font-marker text-lg text-black cursor-pointer shadow-xl z-20 anim-top"
+                        >
+                          <p>{easterEggText}</p>
+                          <span className="text-xs text-gray-500 font-sans font-bold">tap to close</span>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* =========================================
+                2. PROJECTS VIEW (MATCHING HAND-CARD THEME & MASCOT)
+               ========================================= */}
+            {view === 'projects' && (
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20">
+                {/* Header with Cursor-Tracking Mascot Companion */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 anim-top">
+                  <div>
+                    <span className="bg-[#DCEBFA] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                      Selected Works
+                    </span>
+                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
+                      Featured Projects
+                    </h2>
+                  </div>
+
+                  {/* Interactive Mascot Companion that tracks cursor */}
+                  <div className="flex items-center gap-3 bg-white/90 p-2.5 sm:p-3 hand-card-ui shadow-sm">
+                    <Mascot 
+                      directions="mascots/saloni-directions.webp" 
+                      reactions="mascots/saloni-reactions.webp" 
+                      size={76} 
+                      label="Saloni Mascot"
+                    />
+                    <div className="text-left">
+                      <p className="font-marker font-bold text-base sm:text-lg text-black leading-tight">
+                        "Click 'Visit Live' to test my projects!"
+                      </p>
+                      <button 
+                        onClick={() => setView('home')} 
+                        className="mt-1 bg-[#18181B] text-white font-marker text-sm sm:text-base px-3.5 py-1 rounded-full hover:bg-black transition-transform hover:scale-105"
+                      >
+                        Back Home ↶
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Projects Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+                  <div className="bg-[#DCEBFA] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-left">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-marker font-bold text-3xl text-black inline-block">Fluffy Florals Website</h3>
+                        </div>
+                        <a 
+                          href="https://fluffyflorals.vercel.app/" 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="bg-white border-2 border-black text-xs px-3 py-1 rounded-full font-sans font-bold hover:bg-black hover:text-white transition-colors"
+                        >
+                          Visit Live ↗
+                        </a>
+                      </div>
+                      <p className="font-hand text-xl text-gray-800 mt-2 leading-relaxed">
+                        Developed a responsive e-commerce website for a flower business with a focus on improving online presence, customer engagement, and user experience.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">E-Commerce</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">UI/UX</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Next.js / React</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#FEF3C7] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-right">
+                    <div>
+                      <div>
+                        <h3 className="font-marker font-bold text-3xl text-black inline-block">Smart Thali System</h3>
+                      </div>
+                      <p className="font-hand text-xl text-gray-800 mt-2 leading-relaxed">
+                        Food Waste Reduction System: Designed a practical digital solution for restaurants, demonstrating deep understanding of business operational challenges and customer needs.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Food Tech</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Figma Wireframing</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Business Analysis</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#DCFCE7] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-left">
+                    <div>
+                      <div>
+                        <h3 className="font-marker font-bold text-3xl text-black inline-block">Enterprise SQL Data Warehouse</h3>
+                      </div>
+                      <p className="font-hand text-xl text-gray-800 mt-2 leading-relaxed">
+                        Built an end-to-end Medallion database (Bronze, Silver, Gold) in PostgreSQL to consolidate CRM and ERP datasets, developing SQL ETL pipelines for data cleansing and business analytics.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">PostgreSQL</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">SQL ETL</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Medallion Architecture</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#FCE7F3] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-right">
+                    <div>
+                      <div>
+                        <h3 className="font-marker font-bold text-3xl text-black inline-block">Sweetscape Business Ops</h3>
+                      </div>
+                      <p className="font-hand text-xl text-gray-800 mt-2 leading-relaxed">
+                        Home Bakery client management & production scheduling: built workflows managing client relationships, pricing negotiations, and order fulfillment for 2 restaurant accounts with ~50% margin.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">MS Excel</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Pricing Strategy</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Client Relations</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* =========================================
+                3. EXPERIENCE VIEW (MATCHING HAND-CARD THEME & MASCOT)
+               ========================================= */}
+            {view === 'experience' && (
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-24">
+                {/* Header with Mascot Companion */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 anim-top">
+                  <div>
+                    <span className="bg-[#FEF3C7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                      Career & Roles
+                    </span>
+                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
+                      Experience & Leadership
+                    </h2>
+                  </div>
+
+                  {/* Interactive Mascot Companion that tracks cursor */}
+                  <div className="flex items-center gap-3 bg-white/90 p-2.5 sm:p-3 hand-card-ui shadow-sm">
+                    <Mascot 
+                      directions="mascots/saloni-directions.webp" 
+                      reactions="mascots/saloni-reactions.webp" 
+                      size={76} 
+                      label="Saloni Mascot"
+                    />
+                    <div className="text-left">
+                      <p className="font-marker font-bold text-base sm:text-lg text-black leading-tight">
+                        "From client sales to founding Sweetscape!"
+                      </p>
+                      <button 
+                        onClick={() => setView('home')} 
+                        className="mt-1 bg-[#18181B] text-white font-marker text-sm sm:text-base px-3.5 py-1 rounded-full hover:bg-black transition-transform hover:scale-105"
+                      >
+                        Back Home ↶
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Experience Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+                  
+                  {/* Card 1: AFTRLabs */}
+                  <div className="bg-[#DCEBFA] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-left">
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-sans text-xs font-bold bg-white/90 px-2.5 py-0.5 hand-border-soft">01/07/2026 - 11/09/2026 • Remote</span>
+                        <span className="font-marker text-lg text-blue-900 font-bold">Internship</span>
+                      </div>
+                      <h3 className="font-marker font-bold text-3xl text-black">Website Development Sales Intern</h3>
+                      <p className="font-marker text-2xl text-gray-800 font-semibold mb-2">AFTRLabs LLP</p>
+                      
+                      <ul className="list-disc list-inside space-y-2 font-hand text-xl text-gray-800 leading-snug">
+                        <li>Prospect and pitch web development services to startups and local businesses via email, LinkedIn, and cold calls.</li>
+                        <li>Manage leads and coordinate proposals/quotations with founding team, targeting 3 website closures/month.</li>
+                      </ul>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Cold Outreach</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Lead Gen</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Proposals</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Sweetscape */}
+                  <div className="bg-[#FCE7F3] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-right">
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-sans text-xs font-bold bg-white/90 px-2.5 py-0.5 hand-border-soft">Founder & Operator</span>
+                        <span className="font-marker text-lg text-pink-900 font-bold">Entrepreneurship</span>
+                      </div>
+                      <h3 className="font-marker font-bold text-3xl text-black">Founder, Sweetscape</h3>
+                      <p className="font-marker text-2xl text-gray-800 font-semibold mb-2">Home Bakery Business</p>
+                      
+                      <ul className="list-disc list-inside space-y-2 font-hand text-xl text-gray-800 leading-snug">
+                        <li>Turned personal passion for baking into a profitable small business.</li>
+                        <li>Independently managed client relationships, pricing negotiations, and order fulfilment for 2 restaurant clients (~50% margin).</li>
+                        <li>Maintained strict production scheduling and recipe consistency.</li>
+                      </ul>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Business Development</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Pricing Strategy</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Client Retention</span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Mesh-Net */}
+                  <div className="bg-[#FEF3C7] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-left">
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-sans text-xs font-bold bg-white/90 px-2.5 py-0.5 hand-border-soft">15/12/2025 - 15/01/2026</span>
+                        <span className="font-marker text-lg text-yellow-900 font-bold">Internship</span>
+                      </div>
+                      <h3 className="font-marker font-bold text-3xl text-black">Web Developer (UI/UX) Intern</h3>
+                      <p className="font-marker text-2xl text-gray-800 font-semibold mb-2">Mesh-Net Electronics</p>
+                      
+                      <ul className="list-disc list-inside space-y-2 font-hand text-xl text-gray-800 leading-snug">
+                        <li>Gathered and documented business requirements (BRD/FRD) from clients.</li>
+                        <li>Coordinated with cross-functional teams and facilitated design-to-dev handoff.</li>
+                        <li>Utilized MS Excel (Pivot Tables, VLOOKUP) for project analytics and reporting.</li>
+                      </ul>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">BRD/FRD</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">MS Excel</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">UI/UX</span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: GDA CRCE */}
+                  <div className="bg-[#DCFCE7] p-5 sm:p-6 hand-card-ui flex flex-col justify-between anim-right">
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-sans text-xs font-bold bg-white/90 px-2.5 py-0.5 hand-border-soft">06/2024 - 07/2024</span>
+                        <span className="font-marker text-lg text-emerald-900 font-bold">Student Body</span>
+                      </div>
+                      <h3 className="font-marker font-bold text-3xl text-black">Project Intern & Leadership</h3>
+                      <p className="font-marker text-2xl text-gray-800 font-semibold mb-2">Game Development Association, CRCE</p>
+                      
+                      <ul className="list-disc list-inside space-y-2 font-hand text-xl text-gray-800 leading-snug">
+                        <li>Coordinated college events, team communication, and community outreach.</li>
+                        <li>Successfully managed member participation across workshops and hackathons.</li>
+                        <li>Collaborated with cross-functional teams to improve community engagement.</li>
+                      </ul>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 font-sans text-xs text-gray-700 font-bold">
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Leadership</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Event Ops</span>
+                      <span className="bg-white/90 px-3 py-1 hand-border-soft">Public Relations</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* =========================================
+                4. ABOUT VIEW (MATCHING HAND-CARD THEME & MASCOT)
+               ========================================= */}
+            {view === 'about' && (
+              <div className="w-full flex flex-col justify-start py-2 sm:py-4 pb-20">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-5 anim-top">
+                  <div>
+                    <span className="bg-[#FCE7F3] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                      Background & Profile
+                    </span>
+                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
+                      About Saloni Bhosale
+                    </h2>
+                  </div>
+                  <button 
+                    onClick={() => setView('home')} 
+                    className="bg-[#18181B] text-white font-marker text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105"
+                  >
+                    Back Home ↶
+                  </button>
+                </div>
+
+                {/* Character Banner - EXACT SAME HAND-CARD-UI THEME WITH CURSOR-TRACKING MASCOT */}
+                <div className="w-full bg-[#FAF7F0] p-5 sm:p-6 hand-card-ui mb-6 flex flex-col sm:flex-row items-center gap-6 anim-top">
+                  <div className="relative flex-shrink-0 flex flex-col items-center">
+                    <Mascot 
+                      directions="mascots/saloni-directions.webp" 
+                      reactions="mascots/saloni-reactions.webp" 
+                      size={120} 
+                      label="Saloni Chibi Mascot"
+                    />
+                    <div className="mt-1 bg-white px-3 py-0.5 hand-border-soft text-xs font-sans font-bold whitespace-nowrap shadow-sm">
+                      Saloni Bhosale (boop me!)
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#FEE053] px-3 py-0.5 hand-border-soft font-marker text-base font-bold">
+                        ECS Engineer & Founder
+                      </span>
+                      <button 
+                        onClick={triggerRandomQuote}
+                        className="text-sm font-sans font-bold text-gray-600 hover:text-black underline cursor-pointer"
+                      >
+                        tap for quote
+                      </button>
+                    </div>
+                    <p className="font-marker font-bold text-2xl sm:text-3xl text-black">
+                      "{mascotBubble}"
+                    </p>
+                    <p className="font-hand text-xl sm:text-2xl text-gray-700 leading-relaxed">
+                      Fourth-year Electronics & Computer Science Engineering student with strong analytical, problem-solving, and client coordination skills. Experienced in business-oriented web projects, Excel reporting, SQL data modeling, and lead generation.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 w-full items-stretch">
+                  <div className="md:col-span-6 bg-white p-6 hand-card-ui flex flex-col justify-between anim-left">
+                    <div className="space-y-3">
+                      <h3 className="font-marker font-bold text-3xl text-black">Summary & Education</h3>
+                      <div className="border-l-4 border-[#FEE053] pl-3 py-0.5">
+                        <p className="font-marker font-bold text-2xl text-black">BE in ECS Engineering (2024 - 2027)</p>
+                        <p className="font-hand text-xl text-gray-600">Fr. Conceicao Rodrigues College Of Engineering (CRCE), Mumbai</p>
+                      </div>
+                      <p className="font-hand text-xl text-gray-800 leading-relaxed pt-1">
+                        Passionate about connecting business development with modern software engineering. Active coordinator in college leadership and hands-on developer of full-stack and analytical platforms.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-3 border-t border-black/10 font-marker text-lg text-gray-700">
+                      <span>Mumbai, India</span> • <span>Bhavan's College HSC</span> • <span>St. Louis Convent</span>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4 anim-right">
+                    <div className="bg-[#DCEBFA] p-4 hand-card-ui">
+                      <h4 className="font-marker font-bold text-2xl text-black inline-block">Tools & BA</h4>
+                      <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
+                        MS Excel (Pivot, VLOOKUP), Power BI, Jira, Confluence, BRD/FRD, User Stories, UAT.
+                      </p>
+                    </div>
+
+                    <div className="bg-[#FCE7F3] p-4 hand-card-ui">
+                      <h4 className="font-marker font-bold text-2xl text-black inline-block">BizDev & Sales</h4>
+                      <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
+                        Lead Gen, Cold Outreach, Proposals, Pricing Negotiation, CRM, Order Scheduling.
+                      </p>
+                    </div>
+
+                    <div className="bg-[#DCFCE7] p-4 hand-card-ui">
+                      <h4 className="font-marker font-bold text-2xl text-black inline-block">Tech Stack</h4>
+                      <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
+                        HTML/CSS, Java (OOPs), PostgreSQL, MySQL, Java Swing, AWT, GitHub Copilot.
+                      </p>
+                    </div>
+
+                    <div className="bg-[#FEF3C7] p-4 hand-card-ui">
+                      <h4 className="font-marker font-bold text-2xl text-black inline-block">Certifications</h4>
+                      <p className="font-hand text-lg text-gray-800 mt-1 leading-snug">
+                        HCI Design, AWS Cloud Architecting, Cryptography, Spring 101, Innovate X.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* =========================================
+                5. CONTACT VIEW (MATCHING HAND-CARD THEME & MASCOT)
+               ========================================= */}
+            {view === 'contact' && (
+              <div className="w-full flex flex-col justify-start items-center py-2 sm:py-4 pb-20">
+                <div className="w-full max-w-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 anim-top">
+                  <div>
+                    <span className="bg-[#DCFCE7] border border-black/20 text-xs uppercase tracking-wider px-3 py-1 hand-border-soft font-bold">
+                      Direct Connection
+                    </span>
+                    <h2 className="font-marker font-bold text-4xl sm:text-5xl text-[#1F1F1F] mt-1">
+                      Let's Connect & Collaborate
+                    </h2>
+                  </div>
+                  <button 
+                    onClick={() => setView('home')} 
+                    className="bg-[#18181B] text-white font-marker text-xl px-5 py-1.5 rounded-full hover:bg-black transition-transform hover:scale-105"
+                  >
+                    Back Home ↶
+                  </button>
+                </div>
+
+                <div className="w-full max-w-2xl bg-white p-6 sm:p-8 hand-card-ui relative anim-bottom">
+                  
+                  {/* Cursor-tracking Mascot Header */}
+                  <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 pb-5 border-b border-black/10">
+                    <Mascot 
+                      directions="mascots/saloni-directions.webp" 
+                      reactions="mascots/saloni-reactions.webp" 
+                      size={90} 
+                      label="Saloni Contact Mascot"
+                    />
+                    <div className="text-left">
+                      <h3 className="font-marker font-bold text-2xl text-black">"Have an opportunity or project in mind?"</h3>
+                      <p className="font-hand text-xl text-gray-700 leading-snug mt-1">
+                        Whether it's web development, business sales, or custom bakery orders for your café, I'd love to chat!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-[#DCEBFA] p-4 hand-card-ui anim-left">
+                      <p className="text-xs uppercase font-sans font-bold text-gray-600">Email Address</p>
+                      <a href="mailto:ecs.crce.10109@gmail.com" className="font-marker font-bold text-2xl text-blue-800 underline block mt-0.5 break-all select-text">
+                        ecs.crce.10109@gmail.com
+                      </a>
+                    </div>
+
+                    <div className="bg-[#FEF3C7] p-4 hand-card-ui anim-right">
+                      <p className="text-xs uppercase font-sans font-bold text-gray-600">Phone & WhatsApp</p>
+                      <p className="font-marker font-bold text-2xl text-gray-800 mt-0.5 select-text">
+                        +91 8928698197
+                      </p>
+                    </div>
+
+                    <div className="bg-[#FCE7F3] p-4 hand-card-ui anim-left">
+                      <p className="text-xs uppercase font-sans font-bold text-gray-600">Current Location</p>
+                      <p className="font-marker font-bold text-2xl text-gray-800 mt-0.5 select-text">
+                        Mumbai, Maharashtra, India
+                      </p>
+                    </div>
+
+                    <div className="bg-[#DCFCE7] p-4 hand-card-ui anim-right">
+                      <p className="text-xs uppercase font-sans font-bold text-gray-600">GitHub Profile</p>
+                      <a href="https://github.com/saloni-2406" target="_blank" rel="noreferrer" className="font-marker font-bold text-2xl text-emerald-900 underline block mt-0.5 select-text">
+                        github.com/saloni-2406 ↗
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <a
+                      href="mailto:ecs.crce.10109@gmail.com"
+                      className="inline-block bg-[#18181B] text-white font-marker font-bold text-2xl px-10 py-3 rounded-full hover:bg-black shadow-md transition-all hover:scale-105 active:scale-95"
+                    >
+                      Send Direct Email →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
