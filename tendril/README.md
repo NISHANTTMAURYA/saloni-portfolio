@@ -1,153 +1,116 @@
 # 💧 Tendril.js — Liquid Rope & Ink Physics Engine
 
-> **A physics-based cursor engine synthesizing Ricardo Mendieta's Gooey Ink Cursor with Motion Bench's Kinematic Rope Trail.**
+> **A zero-dependency physics-based cursor engine synthesizing Ricardo Mendieta's Gooey Ink Cursor with Motion Bench's Kinematic Rope Trail.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#)
 [![Performance](https://img.shields.io/badge/GC%20Allocation-0%20bytes%20per%20click-purple.svg)](#)
+[![Color](https://img.shields.io/badge/Default-Emerald%20Green-10b981.svg)](#)
 
 ---
 
-## 🌟 The Concept
+## 🌟 Core Features & Inventions
 
-**Tendril.js** merges two creative coding concepts into a single fluid simulation:
+**Tendril.js** merges creative coding concepts into a buttery-smooth 60fps simulation:
 
-1. **Ricardo Mendieta's Ink Cursor**
-   - SVG `#goo` filter (`feGaussianBlur` + `feColorMatrix` alpha threshold) creating liquid surface tension and causing overlapping elements to fuse.
-   - Harmonic idle respiration: when stationary for >150ms, the tail droplets drift with sinusoidal waves (`sin`/`cos`), keeping the liquid alive.
+### 1. 📍 Multi-Checkpoint Waypoint Weaving Architecture
+- **Stage 1 (Plant Pin #1)**: Triple-click anywhere to enter Weaving Mode. The tail roots to that spot with a fluid anchor splash.
+- **Stage 2 (Weave Waypoints #2, #3, ...)**: Single-click across the screen to plant sequential stop pins. The liquid tendon threads through every waypoint with organic catenary gravitational sag!
+- **Stage 3 (The Cascade Drop ✂️)**: Triple-click again (or call `cursor.releaseAllAndDrop()`). The entire threaded cord detaches from all pins and cascades down the screen under real **Verlet integration gravity and distance relaxation constraints**, bending, coiling, and flopping as it falls! Simultaneous pressurized liquid bursts erupt at every checkpoint location!
+- **Anti-Highlighting Guard**: Triple-tapping never accidentally selects text on the page!
 
-2. **Motion Bench's Rope Cursor Trail**
-   - Frame-rate independent exponential kinematics (`1 - Math.exp(-dt / segTau)`).
-   - Identical tension, slack, and feel across 60Hz, 120Hz, and 144Hz displays without whipping or snapping.
-   - Segmented kinematic spine connected by smooth Catmull-Rom cubic splines.
+### 2. 🔍 The Liquid Lens: Ricardo Mendieta's Text Inversion Effect
+- Using `mix-blend-mode: difference`, the liquid droplet calculates mathematical difference against underlying pixels.
+- When hovering over dark text, the text inverts complementary and shines vividly through the drop without obscuring content!
+- Easily toggle between `difference` (Text Reveal Lens), `normal` (Solid Viscous Ink), and `screen` (Luminous Cyber Glow).
 
-3. **Core Refinements in Tendril.js**
-   - **Gravitational Liquid Spills on Click**: Clicking ruptures the fluid tension. Viscous liquid drops erupt and cascade downward with realistic gravity (`vy += gravity`), stretching along their velocity vector, shedding dripping trails, and melting back through the SVG gooey threshold.
-   - **Pure 1:1 Natural Pointer Tracking**: Zero button trapping. Buttons do not catch or drag your mouse position; instead, the head droplet softly swells in size with fluid spring physics while remaining completely free to move.
-   - **Color Studio**: Accepts *any* CSS color (Hex `#ee3d3d`, `rgb(...)`, `hsl(...)`, or named color) and automatically derives harmonious secondary tail gradients.
-   - **Light Mode Default**: Clean editorial layout with warm paper canvas (`#FAF7F0`) and obsidian/crimson ink.
-   - **Zero-GC Object Pooling**: Drops are recycled from pre-allocated SVG pools. Zero memory leaks or garbage collection pauses.
-   - **Visibility Sleep**: Automatically halts the animation loop when the browser tab is hidden to save 100% of CPU/GPU resources.
+### 3. 📱 Mobile Phone & Touch Screen Support
+- Fully optimized for touchscreens and mobile devices:
+  - Dragging your finger across the screen draws the fluid emerald green rope trail in real time.
+  - Tapping anywhere erupts pressurized liquid splashes and falling gravitational spills!
+  - Native page scrolling remains buttery-smooth with non-blocking passive listeners.
+
+### 4. 💧 Gravitational Liquid Spills & Dedicated `spill()` Function
+- When clicked, viscous liquid drops erupt upward and cascade downward under realistic gravity (`vy += gravity`), stretching into aerodynamic teardrops along their velocity vector, shedding trailing micro-droplets, and melting back through the SVG `#goo` surface tension filter.
+- **Adaptive Droplet Mass**: Automatically scales droplet radii with `gooeyBlur` so high blur never erases drops!
+- **Standalone `cursor.spill()` API**: Trigger spills programmatically anywhere with custom volume, speed, and coordinates.
+
+### 5. 🎯 1:1 Natural Pointer Tracking (Zero Sticky Catching)
+- Buttons and links do not catch, trap, or hijack your mouse position. The head droplet softly swells in size with fluid spring physics while remaining completely free to move.
+
+### 6. 🎨 Emerald Green Default Palette
+- Defaults to a fresh, vibrant **Emerald Green (`#10b981`)** with a **Cyan (`#06b6d4`)** tail gradient. Accepts *any* CSS color (Hex, RGB, HSL).
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Include the Script
+### 1-Line HTML Integration (Zero Config)
+
+```html
+<script src="tendril.js" data-tendril></script>
+```
+
+### Modular Vanilla JavaScript
 
 ```html
 <script src="tendril.js"></script>
-```
-
-### 2. Initialize
-
-```html
 <script>
   const cursor = new Tendril({
-    color: '#ee3d3d',          // Any hex, rgb, or hsl color
-    secondaryColor: '#f43f5e', // Optional tail gradient (auto-derived if omitted)
-    spillOnClick: true,        // Liquid drops spill and fall with gravity
-    gravity: 0.38,             // Gravitational acceleration (px/frame²)
-    dripTrail: true,           // Falling drops shed micro-droplets
-    segments: 22,              // Kinematic joints count
-    segTau: 36                 // Rope lag in ms
+    color: '#10b981',              // Emerald Green (Default)
+    secondaryColor: '#06b6d4',     // Cyan tail gradient
+    mixBlendMode: 'difference',    // Text reveal lens
+    spillOnClick: true,            // Pressurized liquid spill
+    tripleTapAnchor: true,         // Waypoint weaving & severed rope
+    multiCheckpoints: true,        // Multiple sequential stop pins
+    severedRopeGravity: 0.42       // Verlet falling gravity
   });
 </script>
 ```
 
 ---
 
-## 🎨 Setting Any Custom Color
+## 🤖 Copy AI Prompt for Fast Implementation
 
-Tendril allows you to change colors on the fly at any time:
+In the interactive showcase (`index.html`), click **"🤖 Copy AI Prompt"** on any tab to immediately prompt Claude, ChatGPT, or Cursor to integrate Tendril into your React, Next.js, Vue, Vite, or Webflow project!
+
+---
+
+## 🕹️ Interactive API Reference
 
 ```javascript
-// Single color (automatically derives harmonious secondary tail)
-cursor.setColor('#7c5cff');
+// Add sequential checkpoint pins:
+cursor.addCheckpoint();       // At current cursor position
+cursor.addCheckpoint(x, y);   // At explicit coordinates
 
-// Primary + Secondary Gradient
-cursor.setColor('#10b981', '#06b6d4');
+// Release all checkpoints and drop severed cord:
+cursor.releaseAllAndDrop();
 
-// Works with any CSS color format:
-cursor.setColor('rgb(238, 61, 61)');
-cursor.setColor('hsl(340, 82%, 56%)');
+// Clear checkpoints without dropping:
+cursor.clearCheckpoints();
+
+// Trigger programmatic liquid spill:
+cursor.spill({ count: 20, speed: 6.0 });
+
+// Switch blend modes on the fly:
+cursor.setBlendMode('difference'); // Inversion lens
+cursor.setBlendMode('normal');     // Solid ink
+
+// Report bug or request integration assistance:
+cursor.reportBug();
 ```
 
 ---
 
-## ⚙️ Configuration Options
+## 🐞 Support & Bug Reporting
 
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `color` | `string` | `'#7c5cff'` | Primary head droplet color (any CSS format). |
-| `secondaryColor` | `string` | `null` | Secondary tail gradient color (auto-generated if null). |
-| `spillOnClick` | `boolean` | `true` | Drops spill and cascade down with gravity on click. |
-| `gravity` | `number` | `0.38` | Gravitational acceleration downward. |
-| `dripTrail` | `boolean` | `true` | Fast falling drops shed trailing micro-droplets. |
-| `splashOnClick` | `boolean` | `true` | Radial ink burst that dissolves in place on click. |
-| `segments` | `number` | `22` | Number of kinematic joints along the rope (10–36). |
-| `segTau` | `number` | `36` | Lag time constant in ms (frame-rate independent). |
-| `headRadius` | `number` | `14` | Radius of the cursor head in px. |
-| `tailRadius` | `number` | `4` | Radius of the tail end droplet in px. |
-| `strokeWidth` | `number` | `9` | Rope spine thickness in px. |
-| `gooeyBlur` | `number` | `7` | SVG `feGaussianBlur` radius (viscosity). |
-| `idleTimeout` | `number` | `150` | Milliseconds of stillness before idle breathing begins. |
-| `idleWobble` | `boolean` | `true` | Enables harmonic sine-wave breathing when stationary. |
-| `hoverScale` | `number` | `1.35` | Scale factor for head droplet when hovering over interactive elements. |
-| `hoverSelector` | `string` | `'a, button, ...'` | CSS selector for interactive elements. |
-| `maxParticles` | `number` | `90` | Size of the pre-allocated particle object pool. |
+Need help or found an edge-case bug?
+Direct developer contact: **[mauryanishant2005@gmail.com](mailto:mauryanishant2005@gmail.com)**
 
----
-
-## 🛠️ API Methods
-
-### `cursor.setColor(primary, [secondary])`
-Updates the palette live without reinitializing.
-
-### `cursor.setOptions(optionsObject)`
-Updates runtime configuration parameters (e.g. `segTau`, `gooeyBlur`, `segments`, `strokeWidth`).
-
-### `cursor.spill(x, y)`
-Programmatically spills liquid at any coordinate (e.g. on form submit or button click).
-
-### `cursor.destroy()`
-Cleans up all DOM nodes, cancels animation frames, and removes event listeners.
-
----
-
-## ⚛️ Usage in React / Next.js
-
-```jsx
-import { useEffect, useRef } from 'react';
-import { Tendril } from './tendril';
-
-export default function App() {
-  const cursorRef = useRef(null);
-
-  useEffect(() => {
-    cursorRef.current = new Tendril({
-      color: '#ee3d3d',
-      secondaryColor: '#f43f5e',
-      spillOnClick: true,
-      gravity: 0.38
-    });
-
-    return () => cursorRef.current?.destroy();
-  }, []);
-
-  return <div>Your App Content</div>;
-}
-```
-
----
-
-## 📜 Credits & Acknowledgments
-
-- **Ricardo Mendieta**: Creator of the original [Ink Cursor](https://codepen.io/mendieta/pen/WgvENJ) (SVG gooey threshold and idle oscillation).
-- **Motion Bench**: Creator of the [Rope Cursor Trail](https://motion-bench.vercel.app) (frame-rate independent exponential kinematics).
+Call `cursor.reportBug()` in code or click the **Report Bug** button on the showcase page to auto-generate an email pre-filled with technical browser & display diagnostics.
 
 ---
 
 ## 📄 License
 
-MIT License © 2026.
+MIT License © 2026 Nishant Maurya
