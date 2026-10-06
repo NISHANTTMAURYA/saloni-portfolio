@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tendril.js — Liquid Rope & Ink Cursor Engine</title>
+  <meta name="description" content="A physics-based cursor engine synthesizing Ricardo Mendieta's Gooey Ink Cursor with Motion Bench's Kinematic Rope Trail.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Asul:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* LIGHT MODE DEFAULT */
+      --bg: #FAF7F0;
+      --bg-card: rgba(255, 255, 255, 0.88);
+      --border-card: rgba(30, 27, 24, 0.12);
+      --text: #1C1917;
+      --text-muted: #57534E;
+      --accent: #ee3d3d;
+      --accent-glow: rgba(238, 61, 61, 0.22);
+      --secondary: #f43f5e;
+      --font-main: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-editorial: 'Asul', serif;
+    }
+
+    body.dark-mode {
+      --bg: #0D0D11;
+      --bg-card: rgba(22, 23, 30, 0.88);
+      --border-card: rgba(255, 255, 255, 0.09);
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --accent-glow: rgba(238, 61, 61, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none; /* Custom fluid cursor */
+      transition: background-color 0.35s ease, color 0.35s ease;
+    }
+
+    /* Ambient background grid pattern */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle at 50% 18%, var(--accent-glow) 0%, transparent 60%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.9;
+    }
+    body.dark-mode .bg-grid {
+      background-image: 
+        radial-gradient(circle at 50% 18%, var(--accent-glow) 0%, transparent 60%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 5%;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-card);
+      background: rgba(250, 247, 240, 0.78);
+      transition: background 0.35s;
+    }
+    body.dark-mode header {
+      background: rgba(13, 13, 17, 0.78);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle-btn, .spill-action-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .spill-action-btn {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .theme-toggle-btn:hover, .spill-action-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 90px;
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 75vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 50px 0 20px;
+      position: relative;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 6.8vw, 5.5rem);
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+      max-width: 950px;
+    }
+
+    .hero h1 span.accent-text {
+      color: var(--accent);
+      transition: color 0.3s;
+    }
+
+    .hero p.lead {
+      font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* Skewed Button (Clean 1:1 Pointer Tracking) */
+    .hover-btn-box {
+      margin: 10px 0 35px;
+      position: relative;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .HoverButton {
+      position: relative;
+      display: inline-block;
+      z-index: 20;
+      padding: 16px 44px;
+      overflow: hidden;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1.5px solid var(--accent);
+      box-shadow: 0 8px 24px var(--accent-glow);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+      cursor: none;
+    }
+
+    .HoverButton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px var(--accent-glow);
+    }
+
+    .HoverButton:active {
+      transform: translateY(1px);
+    }
+
+    .HoverButton::after {
+      content: "01";
+      display: block;
+      position: absolute;
+      color: var(--accent);
+      top: 10px;
+      right: 14px;
+      mix-blend-mode: difference;
+      font-family: var(--font-editorial);
+      font-size: 0.85rem;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    .HoverButton .bg-slider {
+      pointer-events: none;
+      position: absolute;
+      background-color: var(--accent);
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 130%;
+      display: block;
+      transform: translateX(-115%) skew(-14deg);
+      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .HoverButton:hover .bg-slider {
+      transform: translateX(-10%) skew(-14deg);
+    }
+
+    .HoverButton span.btn-label {
+      position: relative;
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      z-index: 2;
+      mix-blend-mode: difference;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .direct-spill-btn {
+      padding: 16px 32px;
+      border-radius: 12px;
+      background: var(--text);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      border: none;
+      cursor: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s;
+    }
+    .direct-spill-btn:hover {
+      transform: translateY(-2px);
+    }
+    .direct-spill-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Live Color Studio & Physical Controls */
+    .studio-panel {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 22px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+      margin-bottom: 50px;
+    }
+
+    .studio-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .studio-title h2 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .studio-title p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Color Picker Bar */
+    .color-picker-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: rgba(0, 0, 0, 0.03);
+      padding: 16px 20px;
+      border-radius: 16px;
+      border: 1px solid var(--border-card);
+      margin-bottom: 28px;
+    }
+    body.dark-mode .color-picker-bar {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .picker-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .picker-group label {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .custom-color-input {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      width: 44px;
+      height: 44px;
+      border: 2px solid var(--border-card);
+      border-radius: 12px;
+      background: none;
+      cursor: none;
+      padding: 0;
+      overflow: hidden;
+      transition: transform 0.15s;
+    }
+    .custom-color-input:hover {
+      transform: scale(1.08);
+      border-color: var(--accent);
+    }
+    .custom-color-input::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .custom-color-input::-webkit-color-swatch {
+      border: none;
+      border-radius: 10px;
+    }
+
+    .hex-text-input {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-card);
+      background: var(--bg);
+      color: var(--text);
+      width: 110px;
+      text-transform: uppercase;
+      cursor: none;
+    }
+
+    .swatch-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      cursor: none;
+      transition: transform 0.2s;
+    }
+    .color-swatch:hover {
+      transform: scale(1.25);
+    }
+
+    /* Sliders Grid */
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-card);
+    }
+
+    .slider-card {
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    body.dark-mode .slider-card {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .slider-val {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 0.82rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.12);
+      outline: none;
+      cursor: none;
+    }
+    body.dark-mode input[type="range"] {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+      cursor: none;
+      transition: transform 0.1s;
+    }
+
+    /* Physics & Math Explanation Box */
+    .math-explainer {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 28px 32px;
+      margin-bottom: 50px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    @media (max-width: 768px) {
+      .math-explainer { grid-template-columns: 1fr; }
+    }
+    .math-card h4 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    .math-card p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .math-card code {
+      background: rgba(0, 0, 0, 0.06);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+    body.dark-mode .math-card code {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Spill Arena */
+    .spill-arena {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-card);
+      border-radius: 24px;
+      padding: 50px 32px;
+      text-align: center;
+      margin-bottom: 50px;
+      cursor: none;
+      transition: border-color 0.25s;
+    }
+    .spill-arena:hover {
+      border-color: var(--accent);
+    }
+    .spill-arena h3 {
+      font-family: var(--font-display);
+      font-size: 1.85rem;
+      margin-bottom: 8px;
+    }
+    .spill-arena p {
+      color: var(--text-muted);
+      max-width: 580px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Code Box */
+    .code-box {
+      background: #111116;
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 60px;
+      color: #E5E7EB;
+    }
+    .code-header {
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .code-header span {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: #9CA3AF;
+    }
+    .copy-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: none;
+      transition: transform 0.15s;
+    }
+    pre {
+      padding: 22px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .c-kw { color: #f472b6; }
+    .c-fn { color: #60a5fa; }
+    .c-str { color: #34d399; }
+    .c-prop { color: #a78bfa; }
+    .c-num { color: #fbbf24; }
+    .c-com { color: #6b7280; font-style: italic; }
+
+    footer {
+      border-top: 1px solid var(--border-card);
+      padding: 36px 5%;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      cursor: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span>TENDRIL.JS</span>
+      <span class="brand-badge">FLUID ENGINE</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="spill-action-btn" onclick="triggerManualSpill()" data-cursor-hover="true">
+        <span>💧 Trigger Spill</span>
+      </button>
+      <button class="theme-toggle-btn" id="themeToggleBtn" data-cursor-hover="true">
+        <span id="themeIcon">🌙</span>
+        <span id="themeLabel">Dark Mode</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-tag">
+        <span>💧 Dedicated Spill API & Adaptive Viscosity</span>
+      </div>
+
+      <h1>
+        Organic Fluid Tension & <br>
+        <span class="accent-text" id="heroAccentText">Gravitational Liquid Spills</span>
+      </h1>
+
+      <p class="lead">
+        Click anywhere or call <code>cursor.spill()</code> to erupt viscous liquid drops that fall under gravity, stretch with velocity, and melt seamlessly through the SVG gooey filter.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="hover-btn-box">
+        <button id="mainHoverBtn" class="HoverButton" data-cursor-hover="true" onclick="triggerManualSpill()">
+          <div class="bg-slider"></div>
+          <span class="btn-label">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            HOVER & CLICK TO SPILL
+          </span>
+        </button>
+
+        <button class="direct-spill-btn" onclick="triggerMassiveSpill()" data-cursor-hover="true">
+          🌊 Massive Splash (40 Drops)
+        </button>
+      </div>
+    </section>
+
+    <!-- Why Blur Erased Drops & Solution Box -->
+    <div class="math-explainer">
+      <div class="math-card">
+        <h4>🔍 Why Did Higher Blur Cause Less Spill?</h4>
+        <p>
+          The SVG gooey filter blurs elements with <code>feGaussianBlur stdDeviation="σ"</code> and then applies a high-contrast alpha cutoff <code>feColorMatrix alpha = blur*34 - 14</code>.
+          When blur is high, small droplets get diluted over a wider radius, dropping their peak alpha below the <code>14/34 (41%)</code> threshold. The filter treats them as empty space and completely erases them!
+        </p>
+      </div>
+      <div class="math-card">
+        <h4>⚡ The Solution: Adaptive Droplet Mass</h4>
+        <p>
+          Tendril now uses <strong>Adaptive Droplet Mass Compensation</strong>. When you raise <code>gooeyBlur</code>, drop radii automatically scale proportionally so each droplet maintains sufficient pixel density to cross the alpha threshold. Even at high blur, spills remain full, thick, and viscous!
+        </p>
+      </div>
+    </div>
+
+    <!-- Color Studio & Physical Controls -->
+    <section class="studio-panel">
+      <div class="studio-header">
+        <div class="studio-title">
+          <h2>Color Studio & Viscosity Deck</h2>
+          <p>Pick any color for the cursor and tune physical parameters in real-time</p>
+        </div>
+      </div>
+
+      <!-- Custom Color Picker Bar -->
+      <div class="color-picker-bar">
+        <div class="picker-group">
+          <label for="primaryColor">Primary Liquid:</label>
+          <input type="color" id="primaryColor" class="custom-color-input" value="#ee3d3d" data-cursor-hover="true">
+          <input type="text" id="primaryHex" class="hex-text-input" value="#EE3D3D" maxlength="7">
+        </div>
+
+        <div class="picker-group">
+          <label for="tailColor">Tail Gradient:</label>
+          <input type="color" id="tailColor" class="custom-color-input" value="#f43f5e" data-cursor-hover="true">
+        </div>
+
+        <!-- Quick Swatches -->
+        <div class="swatch-group">
+          <button class="color-swatch" style="background:#ee3d3d;" onclick="applyColor('#ee3d3d', '#f43f5e')" title="Crimson"></button>
+          <button class="color-swatch" style="background:#7c5cff;" onclick="applyColor('#7c5cff', '#38bdf8')" title="Cyber Violet"></button>
+          <button class="color-swatch" style="background:#10b981;" onclick="applyColor('#10b981', '#06b6d4')" title="Emerald"></button>
+          <button class="color-swatch" style="background:#f59e0b;" onclick="applyColor('#f59e0b', '#f43f5e')" title="Amber"></button>
+          <button class="color-swatch" style="background:#0284c7;" onclick="applyColor('#0284c7', '#38bdf8')" title="Ocean Blue"></button>
+          <button class="color-swatch" style="background:#ec4899;" onclick="applyColor('#ec4899', '#f43f5e')" title="Magenta"></button>
+          <button class="color-swatch" style="background:#18181b;" onclick="applyColor('#18181b', '#3f3f46')" title="Obsidian"></button>
+        </div>
+      </div>
+
+      <!-- Sliders -->
+      <div class="sliders-grid">
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Rope Tension (Lag)</span>
+            <span class="slider-val" id="val-tau">36 ms</span>
+          </div>
+          <input type="range" id="slider-tau" min="15" max="80" value="36">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Gooey Viscosity (Blur)</span>
+            <span class="slider-val" id="val-blur">7 px</span>
+          </div>
+          <input type="range" id="slider-blur" min="2" max="14" value="7">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Spill Drops Count</span>
+            <span class="slider-val" id="val-spill">16 drops</span>
+          </div>
+          <input type="range" id="slider-spill" min="6" max="36" value="16">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Tendon Thickness</span>
+            <span class="slider-val" id="val-stroke">9 px</span>
+          </div>
+          <input type="range" id="slider-stroke" min="4" max="18" value="9">
+        </div>
+      </div>
+    </section>
+
+    <!-- Spill Testing Arena -->
+    <div class="spill-arena" id="spillArena" data-cursor-hover="true" onclick="triggerManualSpill()">
+      <h3>Click Anywhere in this Arena to Spill Liquid</h3>
+      <p>
+        Notice how drops now stay bold and visible even when you drag the viscosity slider to maximum blur!
+      </p>
+    </div>
+
+    <!-- Quick Integration Guide -->
+    <div class="code-box">
+      <div class="code-header">
+        <span>Dedicated Spill API Example</span>
+        <button class="copy-btn" onclick="copySnippet()">Copy Snippet</button>
+      </div>
+      <pre><code><span class="c-com">// 1. Initialize Tendril</span>
+<span class="c-kw">const</span> cursor = <span class="c-kw">new</span> <span class="c-fn">Tendril</span>({
+  <span class="c-prop">color</span>: <span class="c-str">'#ee3d3d'</span>,
+  <span class="c-prop">spillOnClick</span>: <span class="c-kw">true</span>
+});
+
+<span class="c-com">// 2. Call spill() separately anywhere programmatically:</span>
+cursor.<span class="c-fn">spill</span>(); <span class="c-com">// spills at current cursor location</span>
+
+<span class="c-com">// Or with custom coordinates &amp; volume:</span>
+cursor.<span class="c-fn">spill</span>({
+  <span class="c-prop">x</span>: <span class="c-num">400</span>,
+  <span class="c-prop">y</span>: <span class="c-num">300</span>,
+  <span class="c-prop">count</span>: <span class="c-num">25</span>,     <span class="c-com">// 25 drops</span>
+  <span class="c-prop">speed</span>: <span class="c-num">6.5</span>,    <span class="c-com">// launch velocity</span>
+  <span class="c-prop">gravity</span>: <span class="c-num">0.45</span>  <span class="c-com">// falling gravity</span>
+});</code></pre>
+    </div>
+  </main>
+
+  <footer>
+    <p>Tendril.js — Liquid Rope &amp; Ink Cursor Engine · Light Mode Default</p>
+    <p><a href="../index.html">← Back to Main Workspace</a></p>
+  </footer>
+
+  <!-- Include Tendril engine -->
+  <script src="tendril.js"></script>
+
+  <script>
+    let cursor = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cursor = new Tendril({
+        color: '#ee3d3d',
+        secondaryColor: '#f43f5e',
+        segments: 22,
+        segTau: 36,
+        gooeyBlur: 7,
+        strokeWidth: 9,
+        spillOnClick: true,
+        splashOnClick: true,
+        spillCount: 16,
+        gravity: 0.38,
+        dripTrail: true
+      });
+
+      setupColorStudio();
+      setupSliders();
+      setupThemeToggle();
+    });
+
+    // Standalone spill triggers
+    function triggerManualSpill() {
+      if (cursor) {
+        const count = parseInt(document.getElementById('slider-spill').value, 10);
+        cursor.spill({ count: count });
+      }
+    }
+
+    function triggerMassiveSpill() {
+      if (cursor) {
+        cursor.spill({ count: 40, speed: 7.5, size: 1.2 });
+      }
+    }
+
+    function applyColor(pri, sec) {
+      document.getElementById('primaryColor').value = pri;
+      document.getElementById('primaryHex').value = pri.toUpperCase();
+      if (sec) document.getElementById('tailColor').value = sec;
+
+      document.documentElement.style.setProperty('--accent', pri);
+      document.documentElement.style.setProperty('--accent-glow', pri + '35');
+
+      if (cursor) cursor.setColor(pri, sec);
+    }
+
+    function setupColorStudio() {
+      const picker = document.getElementById('primaryColor');
+      const hexInput = document.getElementById('primaryHex');
+      const tailPicker = document.getElementById('tailColor');
+
+      picker.addEventListener('input', (e) => {
+        const val = e.target.value;
+        hexInput.value = val.toUpperCase();
+        document.documentElement.style.setProperty('--accent', val);
+        document.documentElement.style.setProperty('--accent-glow', val + '35');
+        if (cursor) cursor.setColor(val, tailPicker.value);
+      });
+
+      hexInput.addEventListener('change', (e) => {
+        let val = e.target.value.trim();
+        if (!val.startsWith('#')) val = '#' + val;
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+          picker.value = val;
+          document.documentElement.style.setProperty('--accent', val);
+          document.documentElement.style.setProperty('--accent-glow', val + '35');
+          if (cursor) cursor.setColor(val, tailPicker.value);
+        }
+      });
+
+      tailPicker.addEventListener('input', (e) => {
+        if (cursor) cursor.setColor(picker.value, e.target.value);
+      });
+    }
+
+    function setupSliders() {
+      const sTau = document.getElementById('slider-tau');
+      const vTau = document.getElementById('val-tau');
+      sTau.addEventListener('input', (e) => {
+        vTau.textContent = e.target.value + ' ms';
+        cursor.setOptions({ segTau: parseFloat(e.target.value) });
+      });
+
+      const sBlur = document.getElementById('slider-blur');
+      const vBlur = document.getElementById('val-blur');
+      sBlur.addEventListener('input', (e) => {
+        vBlur.textContent = e.target.value + ' px';
+        cursor.setOptions({ gooeyBlur: parseFloat(e.target.value) });
+      });
+
+      const sSpill = document.getElementById('slider-spill');
+      const vSpill = document.getElementById('val-spill');
+      sSpill.addEventListener('input', (e) => {
+        vSpill.textContent = e.target.value + ' drops';
+        cursor.setOptions({ spillCount: parseInt(e.target.value, 10) });
+      });
+
+      const sStroke = document.getElementById('slider-stroke');
+      const vStroke = document.getElementById('val-stroke');
+      sStroke.addEventListener('input', (e) => {
+        vStroke.textContent = e.target.value + ' px';
+        cursor.setOptions({ strokeWidth: parseFloat(e.target.value) });
+      });
+    }
+
+    function setupThemeToggle() {
+      const btn = document.getElementById('themeToggleBtn');
+      const icon = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+
+      btn.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark-mode');
+        if (isDark) {
+          icon.textContent = '☀️';
+          label.textContent = 'Light Mode';
+        } else {
+          icon.textContent = '🌙';
+          label.textContent = 'Dark Mode';
+        }
+      });
+    }
+
+    function copySnippet() {
+      const code = `cursor.spill({ count: 25, speed: 6.0 });`;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy Snippet'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
