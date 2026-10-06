@@ -1074,17 +1074,17 @@
 
       <!-- Action Buttons -->
       <div class="hero-btn-group">
-        <button class="action-btn-primary" id="anchorToggleBtn" onclick="triggerPlantCheckpoint()" data-cursor-hover="true">
-          <span id="anchorBtnIcon">📍</span>
-          <span id="anchorBtnLabel">Plant Pin (Triple-Tap)</span>
+        <button class="action-btn-primary" id="anchorToggleBtn" onclick="triggerAnchorToggle()" data-cursor-hover="true">
+          <span id="anchorBtnIcon">⚓</span>
+          <span id="anchorBtnLabel">Drop Anchor (Triple-Tap)</span>
         </button>
 
         <button class="action-btn-secondary" onclick="triggerManualSpill()" data-cursor-hover="true">
           <span>💧 Spill Liquid</span>
         </button>
 
-        <button class="action-btn-secondary" id="severDropBtn" onclick="triggerSeverAll()" data-cursor-hover="true" style="display:none;">
-          <span>✂️ Sever &amp; Drop All</span>
+        <button class="action-btn-secondary" id="severDropBtn" onclick="triggerSeverRope()" data-cursor-hover="true" style="display:none;">
+          <span>✂️ Sever &amp; Drop Rope</span>
         </button>
 
         <button id="mainHoverBtn" class="HoverButton" data-cursor-hover="true">
@@ -1099,31 +1099,30 @@
       </div>
     </section>
 
-    <!-- Multi-Checkpoint Guidance Banner -->
+    <!-- 2-Stage Triple-Tap Guidance Banner -->
     <div class="anchor-banner" id="guideBanner">
       <div class="banner-top">
         <div class="banner-text">
-          <h4 id="guideTitle">📍 Multi-Checkpoint Waypoint Weaving Architecture:</h4>
-          <p id="guideDesc">Plant multiple stop points across your screen. The rope threads through them all before falling with real Verlet gravity!</p>
+          <h4 id="guideTitle">⚓ 2-Stage Triple-Tap Anchor &amp; Falling Physics Rope:</h4>
+          <p id="guideDesc">Triple-click anywhere to pin the tail at that spot. Stretch the cord across the page, then triple-click again to sever the cord into an independent falling rope!</p>
         </div>
         <div class="banner-actions">
-          <button class="btn-pill" onclick="triggerPlantCheckpoint()" data-cursor-hover="true">+ Plant Pin Here</button>
-          <button class="btn-pill" id="bannerSeverBtn" onclick="triggerSeverAll()" data-cursor-hover="true">✂️ Sever &amp; Drop All</button>
-          <button class="btn-pill danger" onclick="triggerClearAll()" data-cursor-hover="true">✕ Clear Pins</button>
+          <button class="btn-pill" id="bannerAnchorBtn" onclick="triggerAnchorToggle()" data-cursor-hover="true">⚓ Drop Anchor Here</button>
+          <button class="btn-pill" id="bannerSeverBtn" onclick="triggerSeverRope()" data-cursor-hover="true" style="display:none;">✂️ Sever &amp; Drop Rope</button>
         </div>
       </div>
       <div class="banner-steps">
         <div class="banner-step">
-          <strong>1️⃣ Stage 1: Plant Pin #1</strong>
-          Triple-Click anywhere (or click "+ Plant Pin") to start weaving. The tail locks onto Checkpoint #1 with a liquid splash.
+          <strong>1️⃣ Stage 1: Drop Anchor (1st Triple-Tap)</strong>
+          Triple-Click anywhere on screen to pin the tail at that spot. A circular anchor appears with a fluid burst.
         </div>
         <div class="banner-step">
-          <strong>2️⃣ Stage 2: Weave Waypoints (#2, #3, ...)</strong>
-          Single-Click anywhere across the layout to plant intermediate pins. The liquid tendon threads through every waypoint with catenary gravitational sag!
+          <strong>2️⃣ Stage 2: Stretch &amp; Sag Physics</strong>
+          Move your cursor away to stretch the liquid cord. The tendon naturally thins down (Poisson's effect) and droops with gravitational sag.
         </div>
         <div class="banner-step">
-          <strong>3️⃣ Stage 3: The Grand Cascade Drop</strong>
-          Triple-Click again (or click "✂️ Sever &amp; Drop"). The entire cord detaches from all pins and tumbles down with Verlet gravity physics and simultaneous liquid bursts!
+          <strong>3️⃣ Stage 3: Sever &amp; Drop (2nd Triple-Tap)</strong>
+          Triple-Click again anywhere to sever the stretched cord. It detaches completely from your cursor and tumbles down the screen under Verlet gravity!
         </div>
         <div class="banner-step">
           <strong>📱 Mobile &amp; Phone Touch:</strong>
@@ -1746,16 +1745,14 @@ Please adapt this for my site structure.`
       }
     }
 
-    function triggerPlantCheckpoint() {
-      if (cursor) cursor.addCheckpoint();
+    function triggerAnchorToggle() {
+      if (cursor) cursor.toggleAnchor();
     }
 
-    function triggerSeverAll() {
-      if (cursor) cursor.releaseAllAndDrop();
-    }
-
-    function triggerClearAll() {
-      if (cursor) cursor.clearCheckpoints();
+    function triggerSeverRope() {
+      if (cursor && cursor.isAnchored) {
+        cursor.toggleAnchor();
+      }
     }
 
     function triggerManualSpill() {
@@ -1783,34 +1780,39 @@ Please adapt this for my site structure.`
     }
 
     function updateAnchorUI(isAnchored, data) {
-      const count = (data && data.count) || (cursor ? cursor.checkpoints.length : 0);
       const hud = document.getElementById('anchorHud');
       const hudDot = document.getElementById('hudDot');
       const hudText = document.getElementById('hudText');
       const btnIcon = document.getElementById('anchorBtnIcon');
       const btnLabel = document.getElementById('anchorBtnLabel');
       const severBtn = document.getElementById('severDropBtn');
+      const bannerSeverBtn = document.getElementById('bannerSeverBtn');
+      const bannerAnchorBtn = document.getElementById('bannerAnchorBtn');
       const bannerTitle = document.getElementById('guideTitle');
       const bannerDesc = document.getElementById('guideDesc');
 
-      if (isAnchored && count > 0) {
+      if (isAnchored) {
         hud.classList.add('anchored');
-        hudDot.textContent = '📍';
-        hudText.textContent = `WEAVING (${count} PIN${count > 1 ? 'S' : ''})`;
-        btnIcon.textContent = '📍';
-        btnLabel.textContent = `Plant Pin #${count + 1}`;
+        hudDot.textContent = '⚓';
+        hudText.textContent = 'ANCHORED & STRETCHING';
+        btnIcon.textContent = '✂️';
+        btnLabel.textContent = 'Sever & Drop Rope';
         if (severBtn) severBtn.style.display = 'inline-flex';
-        bannerTitle.textContent = `📍 Weaving Active: ${count} Pin${count > 1 ? 's' : ''} Planted Across Viewport!`;
-        bannerDesc.textContent = 'Click anywhere to plant more waypoints, or Triple-Click to sever all into falling Verlet gravity!';
+        if (bannerSeverBtn) bannerSeverBtn.style.display = 'inline-block';
+        if (bannerAnchorBtn) bannerAnchorBtn.textContent = '✂️ Sever Rope';
+        bannerTitle.textContent = '⚓ Tail Anchored! Move away to stretch the tendon:';
+        bannerDesc.textContent = 'Triple-Click again (or click Sever & Drop) to detach the cord and watch it fall with Verlet gravity physics!';
       } else {
         hud.classList.remove('anchored');
         hudDot.textContent = '🟢';
         hudText.textContent = 'FREE ROPE';
-        btnIcon.textContent = '📍';
-        btnLabel.textContent = 'Plant Pin (Triple-Tap)';
+        btnIcon.textContent = '⚓';
+        btnLabel.textContent = 'Drop Anchor (Triple-Tap)';
         if (severBtn) severBtn.style.display = 'none';
-        bannerTitle.textContent = '📍 Multi-Checkpoint Waypoint Weaving Architecture:';
-        bannerDesc.textContent = 'Plant multiple stop points across your screen. The rope threads through them all before falling with real Verlet gravity!';
+        if (bannerSeverBtn) bannerSeverBtn.style.display = 'none';
+        if (bannerAnchorBtn) bannerAnchorBtn.textContent = '⚓ Drop Anchor Here';
+        bannerTitle.textContent = '⚓ 2-Stage Triple-Tap Anchor & Falling Physics Rope:';
+        bannerDesc.textContent = 'Triple-click anywhere to pin the tail at that spot. Stretch the cord across the page, then triple-click again to sever the cord into an independent falling rope!';
       }
     }
 

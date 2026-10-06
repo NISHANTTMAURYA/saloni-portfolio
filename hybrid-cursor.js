@@ -1,52 +1,57 @@
 /**
- * Tendril.js v1.1.0 — Liquid Rope & Ink Physics Engine
+ * Tendril.js (Liquid Rope & Ink Physics Engine)
  *
- * Updates:
- *  - Fix: Prevents browser text selection on rapid / triple taps
- *  - Multi-Checkpoint Waypoint Architecture: Plant multiple pins across the screen; final triple-click releases the entire threaded rope to cascade with Verlet gravity
- *  - Blend Modes & Lens Effects: Supports 'difference' (Mendieta text inversion), 'normal', 'screen'
- *  - Built-in bug reporter via mauryanishant2005@gmail.com
+ * A high-performance physical cursor merging:
+ *  - Ricardo Mendieta's "Ink Cursor"  → SVG gooey filter + text-inverting difference lens + harmonic idle respiration
+ *  - Motion Bench's "Rope Cursor Trail" → frame-rate independent kinematics & Catmull-Rom splines
+ *
+ * Features:
+ *  - 1st Triple-Tap: Anchors tail at that spot. As you move, the cord stretches across the screen with realistic catenary droop and Poisson thinning.
+ *  - 2nd Triple-Tap: The stretched cord severs from cursor, becomes an independent physical rope, and falls down with Verlet gravity physics and smooth fade-out!
+ *  - 1:1 natural pointer tracking with ZERO button trapping.
+ *  - Anti-selection guard preventing rapid tap paragraph highlighting while keeping single click intact.
+ *  - Zero-GC object pooling + auto-sleep when stationary.
  *
  * MIT License
  */
 (function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define([], factory);
-  } else if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    var instance = factory();
-    root.Tendril = instance;
-    root.TendrilCursor = instance;
-    root.LiquidRopeCursor = instance;
-    root.HybridInkRopeCursor = instance;
+  if (typeof define === 'function' && define.amd) define([], factory);
+  else if (typeof module === 'object' && module.exports) module.exports = factory();
+  else {
+    var exp = factory();
+    root.Tendril = exp;
+    root.TendrilCursor = exp;
+    root.LiquidRopeCursor = exp;
+    root.HybridInkRopeCursor = exp;
   }
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  var NS = 'http://www.w3.org/2000/svg';
+
+  // SSR Guard
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     function SSRStub() {}
     SSRStub.prototype.init = function() {};
-    SSRStub.prototype.spill = function() {};
-    SSRStub.prototype.addCheckpoint = function() {};
-    SSRStub.prototype.toggleAnchor = function() {};
+    SSRStub.prototype.destroy = function() {};
     SSRStub.prototype.setColor = function() {};
     SSRStub.prototype.setOptions = function() {};
-    SSRStub.prototype.destroy = function() {};
+    SSRStub.prototype.setBlendMode = function() {};
+    SSRStub.prototype.spill = function() {};
+    SSRStub.prototype.toggleAnchor = function() {};
+    SSRStub.reportBug = function() {};
     return SSRStub;
   }
 
-  var NS = 'http://www.w3.org/2000/svg';
-
   var DEFAULTS = {
-    color: '#10b981',           // Primary head & rope color (Emerald Green)
-    secondaryColor: '#06b6d4',   // Tail gradient color (Cyan)
-    mixBlendMode: 'difference', // 'difference' (Mendieta text-reveal inversion) | 'normal' | 'screen'
+    color: '#10b981',           // Emerald green primary
+    secondaryColor: '#06b6d4',  // Cyan secondary
+    mixBlendMode: 'difference', // Mendieta's iconic text-inverting lens
 
-    // Rope Kinematics
-    segments: 24,               // Kinematic joints count
-    segTau: 36,                 // Frame-rate independent lag in ms
-    headRadius: 14,             // Head droplet radius (px)
+    // Rope kinematics
+    segments: 22,               // Number of physical joints along the cord
+    segTau: 36,                 // Per-segment lag in ms (frame-rate independent)
+    headRadius: 14,             // Cursor pointer head radius (px)
     tailRadius: 4,              // Tail tip radius (px)
     strokeWidth: 9,             // Tendon thickness (px)
 
@@ -73,18 +78,17 @@
     gravity: 0.38,              // Gravitational acceleration (px/frame²)
     dripTrail: true,            // Fast falling drops shed trailing droplets
 
-    // Multi-Checkpoint Waypoint & Severed Rope Physics
-    tripleTapAnchor: true,      // Triple-tap to enter checkpoint mode or release
-    multiCheckpoints: true,     // Single clicks while anchored add new checkpoints
-    tripleTapMaxInterval: 380,  // Maximum ms between taps for multi-tap detection
-    severedRopeGravity: 0.42,   // Gravitational downward pull for detached ropes
+    // 2-Stage Triple-Tap Anchor & Sever Mechanics
+    tripleTapAnchor: true,      // 1st Triple-Tap = Anchor tail; 2nd Triple-Tap = Sever & Drop
+    tripleTapMaxInterval: 380,  // Maximum milliseconds between taps
+    severedRopeGravity: 0.65,   // Gravitational downward pull for detached falling ropes
     severedRopeDrag: 0.985,     // Air resistance for detached ropes
 
     // System
     hideNativeCursor: true,     // Automatically hides native OS mouse cursor
-    preventTextSelectOnTap: true,// Clears browser selection so triple taps don't highlight text
+    preventTextSelectOnTap: true,// Clears browser selection so rapid taps don't highlight text
     maxParticles: 130,          // Pre-allocated particle pool size
-    maxSeveredRopes: 6,         // Maximum simultaneous falling severed ropes
+    maxSeveredRopes: 5,         // Maximum simultaneous falling severed ropes
     zIndex: 999999,             // Layer priority
     respectReducedMotion: true,
     forceTouch: false
@@ -101,7 +105,7 @@
       return [parseInt(v.slice(1, 3), 16), parseInt(v.slice(3, 5), 16), parseInt(v.slice(5, 7), 16)];
     }
     var m = v.match(/[\d.]+/g);
-    return m ? [+m[0], +m[1], +m[2]] : [238, 61, 61];
+    return m ? [+m[0], +m[1], +m[2]] : [16, 185, 129];
   }
 
   function deriveSecondary(color) {
@@ -119,33 +123,38 @@
     return 'hsl(' + h.toFixed(0) + ',' + (s * 100).toFixed(0) + '%,' + (l * 100).toFixed(0) + '%)';
   }
 
-  function r1(n) { return Math.round(n * 10) / 10; }
+  function r1(n) {
+    return (Math.round(n * 10) / 10).toFixed(1);
+  }
 
-  /* ---------------- Core Tendril Class ---------------- */
+  /* ---------------- Tendril Engine Class ---------------- */
 
   function Tendril(options) {
-    this.opts = Object.assign({}, DEFAULTS, options || {});
-    if (!this.opts.secondaryColor) this.opts.secondaryColor = deriveSecondary(this.opts.color);
+    if (!(this instanceof Tendril)) return new Tendril(options);
 
-    this.id = 'tendril_' + Math.random().toString(36).slice(2, 9);
-    this.points = [];
-    this.nodes = [];
-    this.pool = [];
-    this.activeCount = 0;
-    this.target = { x: -100, y: -100 };
+    this.opts = Object.assign({}, DEFAULTS, options || {});
+    if (!this.opts.secondaryColor) {
+      this.opts.secondaryColor = deriveSecondary(this.opts.color);
+    }
+
+    this.id = 'tendril_' + Math.random().toString(36).substr(2, 9);
+    this.target = { x: -200, y: -200 };
     this.headScale = 1;
     this.targetHeadScale = 1;
-    this.started = false;
-    this.idle = false;
-    this.hidden = false;
-    this.running = false;
-    this.lastTime = 0;
-    this.viewH = window.innerHeight;
     this.viewW = window.innerWidth;
+    this.viewH = window.innerHeight;
 
-    // Multi-Checkpoint State
+    this.idle = false;
+    this.idleTimer = null;
+    this.lastTime = 0;
+    this.running = false;
+    this.started = false;
+    this.hidden = false;
+    this.activeCount = 0;
+
+    // 2-Stage Triple-Tap Anchor State
     this.isAnchored = false;
-    this.checkpoints = [];       // Array of { x, y, el }
+    this.anchor = { x: 0, y: 0 };
     this.tapHistory = [];
     this.severedRopes = [];
 
@@ -266,9 +275,11 @@
     var g = document.createElementNS(NS, 'g');
     g.setAttribute('filter', 'url(#' + this.filterId + ')');
 
+    // Layer 1: Severed falling ropes
     this.severedGroup = document.createElementNS(NS, 'g');
     g.appendChild(this.severedGroup);
 
+    // Layer 2: Main Kinematic Rope Path
     var rope = document.createElementNS(NS, 'path');
     rope.setAttribute('fill', 'none');
     rope.setAttribute('stroke', 'url(#' + this.gradId + ')');
@@ -276,17 +287,25 @@
     rope.setAttribute('stroke-linecap', 'round');
     rope.setAttribute('stroke-linejoin', 'round');
 
+    // Layer 3: Rope node circles
     this.nodeGroup = document.createElementNS(NS, 'g');
+
+    // Layer 4: Liquid particles
     this.liquidGroup = document.createElementNS(NS, 'g');
     this.liquidGroup.setAttribute('fill', o.color);
 
-    // Group for visual checkpoint pins
-    this.checkpointGroup = document.createElementNS(NS, 'g');
+    // Layer 5: Clean single Anchor Node Pin
+    this.anchorNode = document.createElementNS(NS, 'circle');
+    this.anchorNode.setAttribute('r', '0');
+    this.anchorNode.setAttribute('fill', o.color);
+    this.anchorNode.setAttribute('stroke', '#ffffff');
+    this.anchorNode.setAttribute('stroke-width', '2');
+    this.anchorNode.style.display = 'none';
 
     g.appendChild(rope);
     g.appendChild(this.nodeGroup);
     g.appendChild(this.liquidGroup);
-    g.appendChild(this.checkpointGroup);
+    g.appendChild(this.anchorNode);
 
     svg.appendChild(g);
     wrap.appendChild(svg);
@@ -294,87 +313,98 @@
 
     this.wrap = wrap;
     this.svg = svg;
+    this.g = g;
     this.rope = rope;
     this.grad = svg.querySelector('#' + this.gradId);
   };
 
   Tendril.prototype._buildRope = function () {
-    var o = this.opts;
-    this.points.length = 0;
-    this.nodes.length = 0;
-    while (this.nodeGroup.firstChild) this.nodeGroup.removeChild(this.nodeGroup.firstChild);
+    var o = this.opts, n = o.segments;
+    this.points = [];
+    this.nodes = [];
 
-    var sx = this.started ? this.target.x : -100, sy = this.started ? this.target.y : -100;
-    for (var i = 0; i < o.segments; i++) {
-      var t = i / (o.segments - 1);
-      var rad = o.headRadius + (o.tailRadius - o.headRadius) * t * 0.75;
-      this.points.push({
-        x: sx, y: sy,
-        px: sx, py: sy,
-        radius: rad,
-        ax: Math.random() * Math.PI * 2,
-        ay: Math.random() * Math.PI * 2
-      });
-      var c = document.createElementNS(NS, 'circle');
-      c.setAttribute('r', r1(rad));
-      c.setAttribute('fill', i === 0 ? o.color : o.secondaryColor);
-      c.setAttribute('cx', sx);
-      c.setAttribute('cy', sy);
-      this.nodeGroup.appendChild(c);
-      this.nodes.push(c);
+    while (this.nodeGroup.firstChild) {
+      this.nodeGroup.removeChild(this.nodeGroup.firstChild);
     }
-    this._wake();
+
+    for (var i = 0; i < n; i++) {
+      var t = i / (n - 1);
+      var r = o.headRadius + (o.tailRadius - o.headRadius) * Math.pow(t, 0.75);
+
+      this.points.push({
+        x: -200, y: -200,
+        px: -200, py: -200,
+        radius: r,
+        ax: Math.random() * 6.28,
+        ay: Math.random() * 6.28
+      });
+
+      var circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('r', r1(r));
+      circle.setAttribute('fill', i === 0 ? o.color : o.secondaryColor);
+      this.nodeGroup.appendChild(circle);
+      this.nodes.push(circle);
+    }
   };
 
   Tendril.prototype._buildPool = function () {
-    while (this.liquidGroup.firstChild) this.liquidGroup.removeChild(this.liquidGroup.firstChild);
-    this.pool.length = 0;
+    this.pool = [];
+    while (this.liquidGroup.firstChild) {
+      this.liquidGroup.removeChild(this.liquidGroup.firstChild);
+    }
+
     for (var i = 0; i < this.opts.maxParticles; i++) {
-      var el = document.createElementNS(NS, 'ellipse');
-      el.setAttribute('rx', 0);
-      el.setAttribute('ry', 0);
-      el.style.display = 'none';
-      this.liquidGroup.appendChild(el);
+      var c = document.createElementNS(NS, 'circle');
+      c.style.display = 'none';
+      this.liquidGroup.appendChild(c);
       this.pool.push({
-        el: el, active: false, kind: 0,
-        x: 0, y: 0, vx: 0, vy: 0, r: 0, life: 0, decay: 0
+        el: c,
+        active: false,
+        kind: 0,
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        r: 0,
+        life: 0,
+        decay: 0,
+        gravity: null
       });
     }
-    this.activeCount = 0;
   };
 
-  /* ---------------- Pointer Events & Multi-Tap Handler ---------------- */
+  /* ---------------- Input & Event Handlers ---------------- */
 
   Tendril.prototype._move = function (e) {
     this.target.x = e.clientX;
     this.target.y = e.clientY;
+
     if (!this.started) {
-      for (var i = 0; i < this.points.length; i++) {
-        var pt = this.points[i];
-        pt.x = pt.px = e.clientX;
-        pt.y = pt.py = e.clientY;
-      }
       this.started = true;
+      for (var i = 0; i < this.points.length; i++) {
+        this.points[i].x = this.target.x;
+        this.points[i].y = this.target.y;
+        this.points[i].px = this.target.x;
+        this.points[i].py = this.target.y;
+      }
     }
+
     this.idle = false;
     clearTimeout(this.idleTimer);
     var self = this;
-    this.idleTimer = setTimeout(function () { self.idle = true; self._wake(); }, this.opts.idleTimeout);
+    this.idleTimer = setTimeout(function () {
+      self.idle = true;
+      self._wake();
+    }, this.opts.idleTimeout);
+
     this._wake();
   };
 
   Tendril.prototype._clearSelection = function () {
-    if (!this.opts.preventTextSelectOnTap) return;
     try {
       if (window.getSelection) {
         var sel = window.getSelection();
         if (sel && sel.removeAllRanges) sel.removeAllRanges();
-      } else if (document.selection && document.selection.empty) {
-        document.selection.empty();
       }
     } catch (err) {}
-
-    // Secondary microtask clear to catch delayed browser text highlighting
     setTimeout(function () {
       try {
         if (window.getSelection) {
@@ -396,7 +426,6 @@
 
   Tendril.prototype._onMouseDown = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
-    // NEVER block mouse events on buttons or interactive controls!
     if (this._isInteractive(e.target)) return;
     if (e.detail > 1) {
       if (e.cancelable) e.preventDefault();
@@ -437,17 +466,12 @@
         var timeSpan = t2.time - t0.time;
         var dist = Math.hypot(t2.x - t0.x, t2.y - t0.y);
 
-        if (timeSpan <= this.opts.tripleTapMaxInterval && dist < 55) {
+        if (timeSpan <= this.opts.tripleTapMaxInterval && dist < 60) {
           this.tapHistory.length = 0;
           this._clearSelection();
 
-          if (!this.isAnchored) {
-            // Triple-Tap 1: Start Weaving / Anchor Mode (Plant 1st Pin)
-            this.addCheckpoint(x, y);
-          } else {
-            // Triple-Tap 2: Final Release! Sever all checkpoints & drop physics rope
-            this.releaseAllAndDrop();
-          }
+          // 2-Stage Toggle: Triple-Tap 1 = Anchor tail & stretch cord; Triple-Tap 2 = Sever cord into falling rope!
+          this.toggleAnchor(x, y);
 
           if (!isInteractive && e.cancelable) e.preventDefault();
           this._wake();
@@ -456,18 +480,7 @@
       }
     }
 
-    // While already in Waypoint/Anchor mode, single click adds another checkpoint
-    // (except when clicking interactive controls like buttons, links, or inputs)
-    if (this.isAnchored && this.opts.multiCheckpoints) {
-      var isRapid = this.tapHistory.length > 1 && (now - this.tapHistory[this.tapHistory.length - 2].time) < 260;
-      if (!isRapid && !isInteractive) {
-        this.addCheckpoint(x, y);
-        this._wake();
-        return;
-      }
-    }
-
-    // Normal Click: Splash & Spill
+    // Normal Click: Splash & Spill (Single clicks do NOT add waypoints!)
     if (this.opts.splashOnClick) this._splash(x, y);
     if (this.opts.spillOnClick) this.spill(x, y);
     this.headScale = this.targetHeadScale * 0.65;
@@ -519,96 +532,58 @@
     this.viewW = window.innerWidth;
   };
 
-  /* ---------------- Multi-Checkpoint Architecture ---------------- */
+  /* ---------------- 2-Stage Triple-Tap Anchor & Sever Mechanics ---------------- */
 
   /**
-   * Add a checkpoint / pin at (x, y)
-   * The liquid rope threads through all checkpoints before connecting to the cursor!
+   * Toggle Anchor:
+   *  - Stage 1 (if free): Pins the tail at (x, y) with a clean anchor node. The cord stretches smoothly across screen.
+   *  - Stage 2 (if anchored): Severs the stretched cord into an independent physical falling rope with Verlet gravity!
    */
-  Tendril.prototype.addCheckpoint = function (x, y) {
+  Tendril.prototype.toggleAnchor = function (x, y) {
     x = typeof x === 'number' ? x : this.target.x;
     y = typeof y === 'number' ? y : this.target.y;
 
-    this.isAnchored = true;
-
-    // SVG Pin Circle
-    var circle = document.createElementNS(NS, 'circle');
-    circle.setAttribute('cx', r1(x));
-    circle.setAttribute('cy', r1(y));
-    circle.setAttribute('r', (this.opts.headRadius * 1.1).toFixed(1));
-    circle.setAttribute('fill', this.opts.color);
-    circle.setAttribute('stroke', '#ffffff');
-    circle.setAttribute('stroke-width', '2');
-    this.checkpointGroup.appendChild(circle);
-
-    this.checkpoints.push({ x: x, y: y, el: circle });
-
-    // Anchor burst
-    this._splash(x, y);
-    this._clearSelection();
-
-    if (typeof this.onAnchorChange === 'function') {
-      this.onAnchorChange(true, {
-        count: this.checkpoints.length,
-        checkpoints: this.checkpoints
-      });
-    }
-
-    this._wake();
-  };
-
-  /**
-   * Final Release: Sever all checkpoints & let the entire threaded rope fall with Verlet physics!
-   */
-  Tendril.prototype.releaseAllAndDrop = function () {
-    if (!this.isAnchored && this.checkpoints.length === 0) return;
-
-    this._severAndDropRope();
-
-    // Clear all visual checkpoint nodes
-    while (this.checkpointGroup.firstChild) {
-      this.checkpointGroup.removeChild(this.checkpointGroup.firstChild);
-    }
-    this.checkpoints.length = 0;
-    this.isAnchored = false;
-    this._clearSelection();
-
-    if (typeof this.onAnchorChange === 'function') {
-      this.onAnchorChange(false, { count: 0, checkpoints: [] });
-    }
-
-    this._wake();
-  };
-
-  /**
-   * Clear all checkpoints without dropping a severed rope
-   */
-  Tendril.prototype.clearCheckpoints = function () {
-    while (this.checkpointGroup.firstChild) {
-      this.checkpointGroup.removeChild(this.checkpointGroup.firstChild);
-    }
-    this.checkpoints.length = 0;
-    this.isAnchored = false;
-    this._clearSelection();
-
-    if (typeof this.onAnchorChange === 'function') {
-      this.onAnchorChange(false, { count: 0, checkpoints: [] });
-    }
-
-    this._wake();
-  };
-
-  /**
-   * Toggle Anchor shorthand (Maintains backward compatibility)
-   */
-  Tendril.prototype.toggleAnchor = function (x, y) {
     if (!this.isAnchored) {
-      this.addCheckpoint(x, y);
+      // Stage 1: Anchor Tail & Stretch Cord
+      this.isAnchored = true;
+      this.anchor.x = x;
+      this.anchor.y = y;
+
+      var lastIdx = this.points.length - 1;
+      this.points[lastIdx].x = x;
+      this.points[lastIdx].y = y;
+      this.points[lastIdx].px = x;
+      this.points[lastIdx].py = y;
+
+      this.anchorNode.setAttribute('cx', r1(x));
+      this.anchorNode.setAttribute('cy', r1(y));
+      this.anchorNode.setAttribute('r', (this.opts.headRadius * 1.25).toFixed(1));
+      this.anchorNode.style.display = '';
+
+      this._splash(x, y);
+      this._clearSelection();
+
+      if (typeof this.onAnchorChange === 'function') {
+        this.onAnchorChange(true, { x: x, y: y });
+      }
     } else {
-      this.releaseAllAndDrop();
+      // Stage 2: Sever Stretched Cord & Drop with Gravity!
+      this._severAndDropRope();
+      this.isAnchored = false;
+      this.anchorNode.style.display = 'none';
+      this._clearSelection();
+
+      if (typeof this.onAnchorChange === 'function') {
+        this.onAnchorChange(false, null);
+      }
     }
+
+    this._wake();
   };
 
+  /**
+   * Drops the current stretched cord as an independent falling rope with Verlet physics
+   */
   Tendril.prototype._severAndDropRope = function () {
     var severedPts = [];
     for (var i = 0; i < this.points.length; i++) {
@@ -661,14 +636,12 @@
 
     this.severedRopes.push(severedRope);
 
-    // Burst at head and all checkpoints
+    // Liquid bursts at head and anchor release points
     this._splash(this.target.x, this.target.y);
-    for (var cpIdx = 0; cpIdx < this.checkpoints.length; cpIdx++) {
-      this._splash(this.checkpoints[cpIdx].x, this.checkpoints[cpIdx].y);
-    }
+    this._splash(this.anchor.x, this.anchor.y);
     this.spill(this.target.x, this.target.y, { count: 12, speed: 4.5 });
 
-    // Reset cursor to mouse
+    // Cursor instantly resets to mouse position with fresh free tail
     for (var m = 0; m < this.points.length; m++) {
       this.points[m].x = this.target.x;
       this.points[m].y = this.target.y;
@@ -797,7 +770,7 @@
 
       var energy = Math.abs(h.x - h.px) + Math.abs(h.y - h.py);
 
-      if (!this.isAnchored || this.checkpoints.length === 0) {
+      if (!this.isAnchored) {
         // --- NORMAL FREE ROPE CHASE MODE ---
         var wobble = this.idle && o.idleWobble;
         for (var i = 1; i < n; i++) {
@@ -817,40 +790,30 @@
           energy += Math.abs(dx) + Math.abs(dy);
         }
       } else {
-        // --- MULTI-CHECKPOINT THREADING PHYSICS ---
-        // Tail pins to the first checkpoint
+        // --- CLEAN 2-STAGE ANCHOR STRETCHING PHYSICS ---
+        // Tail stays firmly rooted to anchor position
         var tail = pts[n - 1];
         tail.px = tail.x; tail.py = tail.y;
-        tail.x = this.checkpoints[0].x;
-        tail.y = this.checkpoints[0].y;
+        tail.x = this.anchor.x;
+        tail.y = this.anchor.y;
 
-        // Distribute the rope nodes along all waypoints:
-        var numWaypoints = this.checkpoints.length + 1; // checkpoints + head
-        var segsPerSpan = (n - 1) / (numWaypoints - 1);
+        // Subtle gravitational droop proportional to stretch distance
+        var distHtoT = Math.hypot(this.target.x - this.anchor.x, this.target.y - this.anchor.y);
+        var maxSag = Math.min(32, distHtoT * 0.06);
 
+        // Smooth continuous relaxation along the tendon
         for (var idx = 1; idx < n - 1; idx++) {
           var curr = pts[idx];
           curr.px = curr.x; curr.py = curr.y;
+          var prev = pts[idx - 1];
+          var next = pts[idx + 1];
 
-          // Which waypoint segment are we between?
-          var spanIdx = Math.floor(idx / segsPerSpan);
-          var spanFrac = (idx % segsPerSpan) / segsPerSpan;
+          var midX = (prev.x + next.x) * 0.5;
+          var midY = (prev.y + next.y) * 0.5;
+          var sag = Math.sin((idx / n) * Math.PI) * maxSag;
 
-          // Node target interpolation between neighbor checkpoints
-          var pStart = spanIdx === 0 ? this.checkpoints[0] : (this.checkpoints[spanIdx] || this.target);
-          var pEnd = (spanIdx + 1 >= this.checkpoints.length) ? this.target : this.checkpoints[spanIdx + 1];
-
-          var targetX = pStart.x + (pEnd.x - pStart.x) * spanFrac;
-          var targetY = pStart.y + (pEnd.y - pStart.y) * spanFrac;
-
-          // Realistic Catenary Gravitational Sag:
-          // Longer spans droop downward under their own liquid weight
-          var spanDist = Math.hypot(pEnd.x - pStart.x, pEnd.y - pStart.y);
-          var sagAmount = Math.min(95, Math.max(6, spanDist * 0.11));
-          var sag = Math.sin(spanFrac * Math.PI) * sagAmount;
-
-          var diffX = (targetX - curr.x) * 0.38;
-          var diffY = (targetY + sag - curr.y) * 0.38;
+          var diffX = (midX - curr.x) * 0.42;
+          var diffY = (midY + sag - curr.y) * 0.42;
 
           curr.x += diffX;
           curr.y += diffY;
@@ -872,7 +835,7 @@
       moving = true;
     }
 
-    if (moving || this.activeCount || this.severedRopes.length) {
+    if (moving || this.activeCount || this.severedRopes.length > 0) {
       this.raf = requestAnimationFrame(this._tick);
     } else {
       this.running = false;
@@ -890,7 +853,7 @@
     }
     this.rope.setAttribute('d', d);
 
-    // Physical total length of the rope
+    // Physical total length of the cord
     var totalLen = 0;
     for (var k = 0; k < n - 1; k++) {
       totalLen += Math.hypot(pts[k + 1].x - pts[k].x, pts[k + 1].y - pts[k].y);
@@ -899,7 +862,7 @@
     var stretchRatio = Math.max(1.0, totalLen / restLen);
 
     // Continuum mechanics & Volume Conservation (Poisson's Effect):
-    // As a tendon stretches, thickness necks down inversely with sqrt(stretchRatio)
+    // As the cord stretches, thickness necks down smoothly inversely with sqrt(stretchRatio)
     var effectiveStroke = this.isAnchored
       ? Math.max(2.2, this.opts.strokeWidth / Math.sqrt(stretchRatio))
       : this.opts.strokeWidth;
@@ -928,11 +891,14 @@
   Tendril.prototype._updateSeveredRopes = function (f) {
     var gravity = this.opts.severedRopeGravity * f;
     var drag = Math.pow(this.opts.severedRopeDrag, f);
-    var bottomLimit = this.viewH + 120;
+    var bottomLimit = this.viewH + 80;
 
     for (var rIdx = this.severedRopes.length - 1; rIdx >= 0; rIdx--) {
       var sr = this.severedRopes[rIdx];
       if (!sr.active) continue;
+
+      // Lifespan timer ensures zero stuck fragments remain on screen (~2.5s max)
+      sr.life -= 0.008 * f;
 
       var pts = sr.pts;
       var len = pts.length;
@@ -950,6 +916,7 @@
         if (pt.y < bottomLimit) allOffscreen = false;
       }
 
+      // Distance constraints preserve cord integrity as it falls
       var targetDist = sr.segRestLen;
       for (var pass = 0; pass < 2; pass++) {
         for (var j = 0; j < len - 1; j++) {
@@ -977,6 +944,11 @@
       }
       sr.path.setAttribute('d', d);
 
+      // Smooth visual fade-out
+      var opacity = Math.max(0, Math.min(1, sr.life));
+      sr.path.setAttribute('opacity', opacity.toFixed(2));
+      sr.nodeGroup.setAttribute('opacity', opacity.toFixed(2));
+
       for (var m = 0; m < len; m++) {
         var circle = sr.circleEls[m];
         if (circle) {
@@ -985,7 +957,8 @@
         }
       }
 
-      if (allOffscreen) {
+      // Clean removal when fallen off-screen OR decayed
+      if (allOffscreen || sr.life <= 0) {
         this._destroySeveredRope(sr);
         this.severedRopes.splice(rIdx, 1);
       }
@@ -1018,32 +991,19 @@
         }
         if (p.y - p.r > limitY || p.x < -60 || p.x > this.viewW + 60) p.life = 0;
       } else {
-        p.vy += defaultGravity * 0.35;
         p.x += p.vx * f; p.y += p.vy * f;
         p.life -= p.decay * f;
       }
 
       if (p.life <= 0) {
         p.active = false;
+        p.gravity = null;
         p.el.style.display = 'none';
         this.activeCount--;
-        continue;
-      }
-
-      var el = p.el;
-      if (p.kind === 2) {
-        var speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        var stretch = 1 + Math.min(speed * 0.065, 0.95);
-        var ry = p.r * stretch, rx = p.r / Math.sqrt(stretch);
-        var angle = Math.atan2(p.vy, p.vx) * 57.2958 - 90;
-        el.setAttribute('rx', r1(rx));
-        el.setAttribute('ry', r1(ry));
-        el.setAttribute('transform', 'translate(' + r1(p.x) + ' ' + r1(p.y) + ') rotate(' + r1(angle) + ')');
       } else {
-        var rr = r1(p.r * p.life);
-        el.setAttribute('rx', rr);
-        el.setAttribute('ry', rr);
-        el.setAttribute('transform', 'translate(' + r1(p.x) + ' ' + r1(p.y) + ')');
+        p.el.setAttribute('cx', r1(p.x));
+        p.el.setAttribute('cy', r1(p.y));
+        p.el.setAttribute('r', r1(p.r * p.life));
       }
     }
   };
@@ -1051,56 +1011,62 @@
   /* ---------------- Public API Methods ---------------- */
 
   Tendril.prototype.setColor = function (primary, secondary) {
-    if (!primary || !this.initialized) return;
-    var o = this.opts;
-    o.color = primary;
-    o.secondaryColor = secondary || deriveSecondary(primary);
+    this.opts.color = primary;
+    this.opts.secondaryColor = secondary || deriveSecondary(primary);
 
-    var stops = this.grad.querySelectorAll('stop');
-    stops[0].setAttribute('stop-color', o.color);
-    stops[1].setAttribute('stop-color', o.secondaryColor);
-    for (var i = 0; i < this.nodes.length; i++) {
-      this.nodes[i].setAttribute('fill', i === 0 ? o.color : o.secondaryColor);
+    var stops = this.svg.querySelectorAll('#' + this.gradId + ' stop');
+    if (stops.length >= 2) {
+      stops[0].setAttribute('stop-color', this.opts.color);
+      stops[1].setAttribute('stop-color', this.opts.secondaryColor);
     }
-    this.liquidGroup.setAttribute('fill', o.color);
+    this.nodes[0].setAttribute('fill', this.opts.color);
+    for (var i = 1; i < this.nodes.length; i++) {
+      this.nodes[i].setAttribute('fill', this.opts.secondaryColor);
+    }
+    this.liquidGroup.setAttribute('fill', this.opts.color);
+    this.anchorNode.setAttribute('fill', this.opts.color);
+    this._wake();
+  };
+
+  Tendril.prototype.setOptions = function (newOpts) {
+    Object.assign(this.opts, newOpts);
+    if (newOpts.gooeyBlur !== undefined || newOpts.gooeyContrast !== undefined) {
+      var blurVal = this.opts.gooeyBlur;
+      var matrixOffset = Math.max(-18, Math.min(-10, -18 + (blurVal * 0.5)));
+      var filter = this.svg.querySelector('#' + this.filterId);
+      if (filter) {
+        var gb = filter.querySelector('feGaussianBlur');
+        var cm = filter.querySelector('feColorMatrix');
+        if (gb) gb.setAttribute('stdDeviation', blurVal);
+        if (cm) {
+          cm.setAttribute('values', '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ' +
+            this.opts.gooeyContrast + ' ' + matrixOffset);
+        }
+      }
+    }
+    this._wake();
   };
 
   Tendril.prototype.setBlendMode = function (mode) {
-    if (!mode || !this.initialized) return;
     this.opts.mixBlendMode = mode;
-    this.wrap.style.mixBlendMode = mode;
+    if (this.wrap) {
+      this.wrap.style.mixBlendMode = mode;
+    }
   };
 
-  Tendril.prototype.setOptions = function (next) {
-    if (!next || !this.initialized) return;
-    var o = this.opts;
-    Object.assign(o, next);
+  Tendril.reportBug = function () {
+    var mailto = 'mailto:mauryanishant2005@gmail.com?subject=Tendril.js%20Bug%20Report&body=Hi%20Nishant,%0A%0AI%20found%20an%20issue%20with%20Tendril.js:%0A%0A-%20Browser:%20' + encodeURIComponent(navigator.userAgent) + '%0A-%20Viewport:%20' + window.innerWidth + 'x' + window.innerHeight;
+    window.location.href = mailto;
+  };
 
-    if (next.color !== undefined || next.secondaryColor !== undefined) {
-      this.setColor(o.color, next.secondaryColor || null);
-    }
-    if (next.segments !== undefined || next.headRadius !== undefined || next.tailRadius !== undefined) {
-      this._buildRope();
-    }
-    if (next.maxParticles !== undefined) this._buildPool();
-    if (next.strokeWidth !== undefined) this.rope.setAttribute('stroke-width', o.strokeWidth);
-    if (next.mixBlendMode !== undefined) this.setBlendMode(next.mixBlendMode);
-
-    if (next.gooeyBlur !== undefined || next.gooeyContrast !== undefined || next.gooeyOffset !== undefined) {
-      var flt = this.svg.querySelector('#' + this.filterId);
-      var blurVal = o.gooeyBlur;
-      var matrixOffset = next.gooeyOffset !== undefined ? next.gooeyOffset : Math.max(-18, Math.min(-10, -18 + (blurVal * 0.5)));
-
-      flt.querySelector('feGaussianBlur').setAttribute('stdDeviation', blurVal);
-      flt.querySelector('feColorMatrix').setAttribute('values',
-        '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ' + o.gooeyContrast + ' ' + matrixOffset);
-    }
-    this._wake();
+  Tendril.prototype.reportBug = function () {
+    Tendril.reportBug();
   };
 
   Tendril.prototype.destroy = function () {
     cancelAnimationFrame(this.raf);
     clearTimeout(this.idleTimer);
+
     window.removeEventListener('pointermove', this._move);
     window.removeEventListener('pointerdown', this._down);
     window.removeEventListener('pointerup', this._up);
@@ -1114,89 +1080,33 @@
     document.removeEventListener('pointerout', this._out);
     document.removeEventListener('visibilitychange', this._vis);
 
+    this._removeHideNativeCursor();
+
     for (var i = 0; i < this.severedRopes.length; i++) {
       this._destroySeveredRope(this.severedRopes[i]);
     }
     this.severedRopes.length = 0;
 
-    if (this.wrap && this.wrap.parentNode) this.wrap.parentNode.removeChild(this.wrap);
-    this._removeHideNativeCursor();
-
+    if (this.wrap && this.wrap.parentNode) {
+      this.wrap.parentNode.removeChild(this.wrap);
+    }
     this.initialized = false;
-    this.running = false;
   };
 
-  /**
-   * Send bug report / feedback directly to mauryanishant2005@gmail.com with active system diagnostics
-   */
-  Tendril.prototype.reportBug = function (extraNote) {
-    var subject = encodeURIComponent('[Tendril.js] Bug / Integration Issue Report');
-    var optsCopy = JSON.stringify({
-      color: this.opts.color,
-      mixBlendMode: this.opts.mixBlendMode,
-      segments: this.opts.segments,
-      segTau: this.opts.segTau,
-      gooeyBlur: this.opts.gooeyBlur,
-      gravity: this.opts.gravity,
-      severedRopeGravity: this.opts.severedRopeGravity,
-      activeCheckpoints: this.checkpoints.length
-    }, null, 2);
-
-    var body = encodeURIComponent(
-      'Hi Nishant,\n\nI am reporting a bug or requesting assistance with Tendril.js:\n\n' +
-      (extraNote ? ('Note: ' + extraNote + '\n\n') : '') +
-      '--- System Diagnostics ---\n' +
-      '• Screen: ' + window.innerWidth + 'x' + window.innerHeight + ' (DPR: ' + (window.devicePixelRatio || 1) + ')\n' +
-      '• Browser: ' + (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown') + '\n' +
-      '• Active Tendril Config:\n' + optsCopy + '\n\n' +
-      '--- Issue Description ---\n' +
-      '[Describe what happened, expected behavior, or steps to reproduce]\n\n' +
-      'Thanks!'
-    );
-
-    window.location.href = 'mailto:mauryanishant2005@gmail.com?subject=' + subject + '&body=' + body;
-  };
-
-  Tendril.defaults = DEFAULTS;
-
-  // Static helper to trigger bug report email
-  Tendril.reportBug = function (extraNote) {
-    if (typeof window !== 'undefined' && window.tendrilInstance && typeof window.tendrilInstance.reportBug === 'function') {
-      window.tendrilInstance.reportBug(extraNote);
-      return;
-    }
-    var subject = encodeURIComponent('[Tendril.js] Bug / Integration Issue Report');
-    var body = encodeURIComponent(
-      'Hi Nishant,\n\nI am reporting an issue with Tendril.js:\n\n' +
-      (extraNote ? ('Note: ' + extraNote + '\n\n') : '') +
-      '• Browser: ' + (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown') + '\n' +
-      '• Screen: ' + (typeof window !== 'undefined' ? (window.innerWidth + 'x' + window.innerHeight) : 'Unknown') + '\n\n' +
-      '--- Issue Description ---\n' +
-      '[Describe what happened or steps to reproduce]\n\nThanks!'
-    );
-    if (typeof window !== 'undefined') {
-      window.location.href = 'mailto:mauryanishant2005@gmail.com?subject=' + subject + '&body=' + body;
-    }
-  };
-
-  // Auto-init via data-tendril
+  // Auto-init via data attribute
   if (typeof document !== 'undefined') {
-    var checkAutoInit = function () {
-      var script = document.querySelector('script[data-tendril]');
-      if (script && !window.__tendril_auto_inited) {
-        window.__tendril_auto_inited = true;
-        var attr = script.getAttribute('data-tendril');
-        var cfg = {};
-        if (attr && attr.trim().startsWith('{')) {
-          try { cfg = JSON.parse(attr); } catch (e) {}
-        }
-        window.tendrilInstance = new Tendril(cfg);
-      }
-    };
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkAutoInit);
+      document.addEventListener('DOMContentLoaded', function () {
+        var auto = document.querySelector('[data-tendril]');
+        if (auto && !window.__tendril_auto_instance) {
+          window.__tendril_auto_instance = new Tendril();
+        }
+      });
     } else {
-      checkAutoInit();
+      var auto = document.querySelector('[data-tendril]');
+      if (auto && !window.__tendril_auto_instance) {
+        window.__tendril_auto_instance = new Tendril();
+      }
     }
   }
 
