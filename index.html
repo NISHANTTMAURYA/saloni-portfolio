@@ -1075,8 +1075,9 @@
 </svg>
                       </DraggableDoodle>
 
-                      {/* --- 1. TOP-LEFT: FOCUS / GOOD IDEAS + HAND-DRAWN DOODLE ARROW (Ref Style: Wave swoop) --- */}
-                      <DraggableDoodle id="home-focus-good-ideas" className="absolute -top-7 sm:-top-9 -left-2 sm:-left-6 lg:-left-10 transform -rotate-3 pointer-events-auto z-20 text-left">
+                                            {/* --- 1. TOP-LEFT: FOCUS / GOOD IDEAS (TEXT & DOODLE SEPARATED) --- */}
+                      {/* 1A. Focus / Good Ideas Text */}
+                      <DraggableDoodle id="home-focus-text" className="absolute -top-7 sm:-top-9 -left-2 sm:-left-6 lg:-left-10 transform -rotate-3 pointer-events-auto z-20 text-left">
                         {/* Doodle bulb / spark line art */}
                         <div className="flex items-center gap-1.5 mb-1">
                           <svg className="w-5 h-5 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1093,9 +1094,11 @@
                           <span className="text-[#059669] block">Better</span>
                           <span className="text-[#2563EB] block">Execution.</span>
                         </div>
-                        
-                        {/* Authentic Handy-Arrows Library SVG: Blue Arrow */}
-                        <div className="mt-1 ml-1 relative z-20 pointer-events-none arrow-wiggle" style={{ animationDelay: '1s' }}>
+                      </DraggableDoodle>
+
+                      {/* 1B. Focus / Good Ideas Blue Arrow Doodle */}
+                      <DraggableDoodle id="home-focus-arrow" className="absolute top-[108px] sm:top-[124px] lg:top-[136px] -left-1 sm:-left-5 lg:-left-8 z-20 pointer-events-auto">
+                        <div className="pointer-events-none arrow-wiggle" style={{ animationDelay: '1s' }}>
                           <img 
                             src="public/arrows/1.svg" 
                             alt="Arrow" 
@@ -1105,8 +1108,9 @@
                         </div>
                       </DraggableDoodle>
 
-                      {/* --- 2. TOP-RIGHT: ALWAYS ACTIVE + HANDY-ARROWS LIBRARY (Red) --- */}
-                      <DraggableDoodle id="home-always-active" className="absolute -top-7 sm:-top-9 -right-2 sm:-right-6 lg:-right-8 text-left z-20 pointer-events-none">
+                      {/* --- 2. TOP-RIGHT: ALWAYS ACTIVE (TEXT & DOODLE SEPARATED) --- */}
+                      {/* 2A. Always Active Text */}
+                      <DraggableDoodle id="home-always-active-text" className="absolute -top-7 sm:-top-9 -right-2 sm:-right-6 lg:-right-8 text-left z-20 pointer-events-auto">
                         <div className="transform rotate-2">
                           <span className="font-marker font-bold text-xs sm:text-sm uppercase tracking-wider text-[#7C3AED] block mb-1">Always Active</span>
                           <p className="font-marker font-bold text-lg sm:text-xl md:text-2xl text-[#1F1F1F] leading-snug">
@@ -1115,9 +1119,11 @@
                             <span className="text-[#059669]">something cool...</span>
                           </p>
                         </div>
-                        
-                        {/* Authentic Handy-Arrows Library SVG: Red Arrow */}
-                        <div className="mt-1 ml-1 relative z-20 arrow-wiggle" style={{ animationDelay: '2.25s' }}>
+                      </DraggableDoodle>
+
+                      {/* 2B. Always Active Red Arrow Doodle */}
+                      <DraggableDoodle id="home-always-active-arrow" className="absolute top-[100px] sm:top-[115px] lg:top-[125px] right-8 sm:right-6 lg:right-4 z-20 pointer-events-auto">
+                        <div className="arrow-wiggle" style={{ animationDelay: '2.25s' }}>
                           <img 
                             src="public/arrows/10.svg" 
                             alt="Arrow" 
@@ -1127,8 +1133,9 @@
                         </div>
                       </DraggableDoodle>
 
-                      {/* --- 3. BOTTOM-RIGHT: CHAI + CODE + CAT + HANDY-ARROWS LIBRARY (Pink) --- */}
-                      <DraggableDoodle id="home-chai-code-cat" className="absolute -bottom-8 sm:-bottom-10 -right-2 sm:-right-6 lg:-right-8 z-20 pointer-events-none text-right">
+                      {/* --- 3. BOTTOM-RIGHT: CHAI + CODE + CAT (TEXT & DOODLE SEPARATED) --- */}
+                      {/* 3A. Chai + Code + Cat Text */}
+                      <DraggableDoodle id="home-chai-code-cat-text" className="absolute bottom-8 sm:bottom-10 lg:bottom-12 -right-2 sm:-right-6 lg:-right-8 z-20 pointer-events-auto text-right">
                         <div className="flex flex-col items-end font-marker font-bold text-lg sm:text-xl md:text-2xl leading-tight transform -rotate-1">
                           <span className="text-[#92400E]">Chai</span>
                           <span className="text-gray-400 font-bold text-xs my-0.5">+</span>
@@ -1136,9 +1143,11 @@
                           <span className="text-gray-400 font-bold text-xs my-0.5">+</span>
                           <span className="text-[#BE185D]">Cat</span>
                         </div>
+                      </DraggableDoodle>
 
-                        {/* Authentic Handy-Arrows Library SVG: Pink Arrow (Slanted NORTH-LEFT towards cat) */}
-                        <div className="flex justify-end mt-1 mr-2 relative z-20 arrow-wiggle" style={{ animationDelay: '3.5s' }}>
+                      {/* 3B. Chai + Code + Cat Pink Arrow Doodle */}
+                      <DraggableDoodle id="home-chai-code-cat-arrow" className="absolute -bottom-8 sm:-bottom-10 -right-2 sm:-right-5 lg:-right-6 z-20 pointer-events-auto">
+                        <div className="flex justify-end mr-2 arrow-wiggle" style={{ animationDelay: '3.5s' }}>
                           <img 
                             src="public/arrows/14.svg" 
                             alt="Arrow" 
@@ -1148,10 +1157,10 @@
                         </div>
                       </DraggableDoodle>
 
-                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY (Arrow on top pointing to cakes, text below) --- */}
-                      <DraggableDoodle id="home-sweetscape-bakery" className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-20 pointer-events-none text-left">
-                        {/* Authentic Handy-Arrows Library SVG: Orange Arrow (On top) */}
-                        <div className="mb-0.5 ml-3 relative z-20 arrow-wiggle" style={{ animationDelay: '4.75s' }}>
+                      {/* --- 4. BOTTOM-LEFT: SWEETSCAPE BAKERY (TEXT & DOODLE SEPARATED) --- */}
+                      {/* 4A. Sweetscape Orange Arrow Doodle (On top) */}
+                      <DraggableDoodle id="home-sweetscape-arrow" className="absolute bottom-12 sm:bottom-14 lg:bottom-16 -left-1 sm:-left-4 lg:-left-6 z-20 pointer-events-auto">
+                        <div className="ml-3 arrow-wiggle" style={{ animationDelay: '4.75s' }}>
                           <img 
                             src="public/arrows/28.svg" 
                             alt="Arrow" 
@@ -1159,8 +1168,10 @@
                             style={{ filter: 'invert(52%) sepia(90%) saturate(1630%) hue-rotate(15deg) brightness(95%) contrast(93%)' }}
                           />
                         </div>
+                      </DraggableDoodle>
 
-                        {/* Sweetscape Home Bakery Text (Below arrow) */}
+                      {/* 4B. Sweetscape Home Bakery Text (Below arrow) */}
+                      <DraggableDoodle id="home-sweetscape-text" className="absolute -bottom-8 sm:-bottom-10 -left-2 sm:-left-6 lg:-left-8 z-20 pointer-events-auto text-left">
                         <div className="transform rotate-2 leading-tight font-marker font-bold">
                           <p className="text-[#BE185D] text-lg sm:text-xl md:text-2xl">Sweetscape</p>
                           <p className="text-sm sm:text-base text-[#78350F] font-marker font-bold">Home Bakery</p>
