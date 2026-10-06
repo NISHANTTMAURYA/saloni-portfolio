@@ -78,6 +78,42 @@ Handmade-style developer, founder & UI/UX portfolio with cursor-tracking chibi 2
   - **About View (3 Doodles):** Top-Right graduation cap (Fr. CRCE), Top-Left steaming chai cup, and Bottom-Right Mumbai coastal breeze & sun.
   - **Contact View (3 Doodles):** Top-Right soaring paper airplane, Top-Left chat speech bubbles, and Bottom-Left flying mail envelope.
 
+### 🧹 Part 7: Emoji Removal & Flawless Doodle Layering
+* **Full Emoji Cleanup:**
+  - Removed emoji icons across all cards (`📊`, `🤝`, `💻`, `📜`, `🎓`, `📍`, `✨`) for a cleaner, high-polish typography aesthetic.
+* **Flawless Doodle Positioning & Zero Overlaps:**
+  - **Home Page:** Doodles are nested directly in the hero container below the `<header>`, completely clearing the navbar, logo, and "Let's Talk" CTA.
+  - **Subpages:** Eliminated card occlusion and title overlaps by placing upper doodles in outer side gutters (`-left-20` / `-right-20`) and bottom doodles in dedicated, centered footer presentation zones below the card grids.
+
+### 🎨 Part 8: +20% Doodle Size Increase, Organic Varied Positioning & Permanent Visibility
+* **Permanent Viewport Visibility Across All Devices:**
+  - Removed restrictive `hidden 2xl:block` classes that previously hid doodles on displays narrower than 1536px (laptops & desktops).
+  - Replaced extreme negative margins (`-left-20`, `-top-16`) that caused viewport clipping in `overflow-x: hidden` containers with safe, responsive bounds (`w-20 sm:w-24`, standard Tailwind scales).
+  - Eliminated card occlusion during CSS entrance animations by cleanly separating doodle coordinates from card grid bounds.
+* **+20% Doodle Size Enhancement:**
+  - Scaled all signature doodles up by 20% to 25% for bolder, more expressive hand-drawn visual presence:
+    - **Home Pink Wavy Ribbon:** Scaled to `w-64 sm:w-80 lg:w-96 h-16 sm:h-20` placed right above the `Hey!` hero greeting.
+    - **Home Golden Loop:** Scaled to `w-40 sm:w-52 lg:w-60 h-40 sm:h-52 lg:h-60` floating above the character art.
+    - **Home Green Grid:** Scaled to `w-28 sm:w-36 lg:w-40 h-28 sm:h-36 lg:h-40` in the lower right.
+    - **Subpage Header Doodles:** Scaled up from `w-14` / `w-16` to `w-20 sm:w-24 h-20 sm:h-24` (80px – 96px).
+    - **Subpage Footer Doodles:** Scaled up to `w-40 sm:w-48` (Cupcake), `w-56 sm:w-68` (Growth chart), `w-60 sm:w-72` (Mumbai waves), `w-52 sm:w-64` (Flying envelope).
+* **Organic Sketchbook Tilts & Zero Overlap Guarantee:**
+  - Added authentic asymmetrical hand-drawn rotations (`-rotate-2`, `rotate-6`, `rotate-12`, `-rotate-8`, `rotate-3`, etc.) to break rigid symmetry.
+* **Deep Linking & Hash Navigation:**
+  - Added synchronized hash routing (`#home`, `#projects`, `#experience`, `#about`, `#contact`) with `window.onhashchange` listener for native browser history and deep linking.
+* **Contact Page Emoji Doodles Expansion & Enlargement:**
+  - Expanded and enlarged doodles on the Contact view (`#contact`) to `w-32 xl:w-36` and `w-36 xl:w-40` across wide desktop gutters:
+    - **Left Flank:**
+      1. *Chat Speech Bubbles* (`w-32 xl:w-36`, `#F43F5E`, "say hello! 💬")
+      2. *Big 5-Point Sketch Star & Twinkles* (`w-28 xl:w-32`, `#F59E0B`, "big ideas ⭐")
+      3. *Double Hearts Doodle* (`w-32 xl:w-36`, `#E11D48`, "made with love 💖")
+    - **Right Flank:**
+      4. *Soaring Paper Airplane* (`w-36 xl:w-40`, `#10B981`, "direct reach ↗")
+      5. *Smiling Sunshine / Happy Face* (`w-28 xl:w-32`, `#F59E0B`, "good vibes 😊")
+      6. *Flying Mail Envelope* (`w-36 xl:w-40`, `#3B82F6`, "open to connect! ✉️")
+  - Added mobile responsive fallback row beneath the contact action button.
+  - Guaranteed zero overlap with the contact card and headers with >140px safe buffer.
+
 ---
 
 ## 🚀 How to Run Locally
@@ -91,3 +127,4 @@ Or view the curated arrow library gallery:
 ```bash
 open public/arrows_gallery.html
 ```
+
