@@ -827,6 +827,248 @@
       );
     }
 
+    /* --- INTERACTIVE DOODLE MAKER & PLACEMENT ENGINE --- */
+    function CustomDoodleModal({ isOpen, onClose, onSaveDoodle }) {
+      const canvasRef = useRef(null);
+      const [brushColor, setBrushColor] = useState('#EC4899'); // Default pink
+      const [brushWidth, setBrushWidth] = useState(4);
+      const isDrawingRef = useRef(false);
+      const pointsRef = useRef([]);
+
+      const COLOR_OPTIONS = [
+        { label: 'Pink', hex: '#EC4899', bg: 'bg-[#EC4899]' },
+        { label: 'Graphite', hex: '#18181B', bg: 'bg-[#18181B]' },
+        { label: 'Yellow', hex: '#F59E0B', bg: 'bg-[#F59E0B]' },
+        { label: 'Mint', hex: '#10B981', bg: 'bg-[#10B981]' },
+        { label: 'Sky', hex: '#0284C7', bg: 'bg-[#0284C7]' },
+        { label: 'Lavender', hex: '#8B5CF6', bg: 'bg-[#8B5CF6]' },
+      ];
+
+      useEffect(() => {
+        if (!isOpen) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        // Clear to transparent with retina support
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        pointsRef.current = [];
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      const getPos = (e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      };
+
+      const startDrawing = (e) => {
+        e.preventDefault();
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.setPointerCapture(e.pointerId);
+        isDrawingRef.current = true;
+        const pos = getPos(e);
+        pointsRef.current.push([pos]);
+
+        const ctx = canvas.getContext('2d');
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushWidth;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, brushWidth / 2, 0, Math.PI * 2);
+        ctx.fillStyle = brushColor;
+        ctx.fill();
+      };
+
+      const draw = (e) => {
+        if (!isDrawingRef.current) return;
+        e.preventDefault();
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const pos = getPos(e);
+
+        const currentStroke = pointsRef.current[pointsRef.current.length - 1];
+        if (!currentStroke) return;
+
+        const prevPos = currentStroke[currentStroke.length - 1];
+        currentStroke.push(pos);
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushWidth;
+
+        ctx.beginPath();
+        ctx.moveTo(prevPos.x, prevPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      };
+
+      const stopDrawing = (e) => {
+        if (!isDrawingRef.current) return;
+        isDrawingRef.current = false;
+        try {
+          canvasRef.current.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+      };
+
+      const handleClear = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        pointsRef.current = [];
+      };
+
+      const handlePlaceOnPage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas || pointsRef.current.length === 0) {
+          onClose();
+          return;
+        }
+
+        // Export trimmed/clean data URL
+        const dataUrl = canvas.toDataURL('image/png');
+        onSaveDoodle(dataUrl);
+        onClose();
+      };
+
+      return (
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none"
+          onClick={onClose}
+        >
+          <div 
+            className="bg-[#FFFDF9] border-[3px] border-[#18181B] rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-[8px_8px_0px_#18181B] relative flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+            style={{ borderRadius: '255px 25px 225px 25px / 25px 225px 25px 255px' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b-2 border-dashed border-gray-200 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">✏️</span>
+                <div>
+                  <h3 className="font-marker font-bold text-2xl sm:text-3xl text-gray-900 leading-tight">
+                    Draw Your Doodle!
+                  </h3>
+                  <p className="text-xs sm:text-sm font-sans font-medium text-gray-500">
+                    Draw anything, then place & drag it anywhere on the portfolio!
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-9 h-9 rounded-full border-2 border-black bg-pink-100 hover:bg-pink-200 flex items-center justify-center font-bold text-gray-800 transition-transform active:scale-90"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Drawing Canvas Board */}
+            <div className="relative w-full aspect-[4/3] bg-white border-2 border-dashed border-[#18181B] rounded-2xl overflow-hidden cursor-crosshair shadow-inner">
+              {/* Subtle notebook grid texture */}
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-20"
+                style={{
+                  backgroundImage: 'radial-gradient(#CBD5E1 1.5px, transparent 1.5px)',
+                  backgroundSize: '16px 16px'
+                }}
+              />
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full relative z-10 touch-none"
+                onPointerDown={startDrawing}
+                onPointerMove={draw}
+                onPointerUp={stopDrawing}
+                onPointerCancel={stopDrawing}
+              />
+              {pointsRef.current.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-300 font-marker text-lg">
+                  Draw something cute here ✨
+                </div>
+              )}
+            </div>
+
+            {/* Palette & Brush size */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              {/* Color swatches */}
+              <div className="flex items-center gap-2">
+                {COLOR_OPTIONS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    onClick={() => setBrushColor(c.hex)}
+                    title={c.label}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-transform ${c.bg} ${
+                      brushColor === c.hex ? 'scale-125 border-black shadow-[2px_2px_0px_#000]' : 'border-black/30 hover:scale-110'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* Stroke width selector */}
+              <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-full border border-gray-300">
+                {[
+                  { size: 2.5, label: 'Thin' },
+                  { size: 4.5, label: 'Med' },
+                  { size: 7.5, label: 'Thick' }
+                ].map((s) => (
+                  <button
+                    key={s.size}
+                    type="button"
+                    onClick={() => setBrushWidth(s.size)}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-marker font-bold transition-all ${
+                      brushWidth === s.size ? 'bg-black text-white' : 'text-gray-600 hover:text-black'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions: Clear and Done/Place */}
+            <div className="flex items-center justify-between gap-3 pt-2 border-t-2 border-dashed border-gray-200">
+              <button
+                type="button"
+                onClick={handleClear}
+                className="px-4 py-2 border-2 border-gray-400 text-gray-700 rounded-full font-marker text-sm sm:text-base hover:bg-gray-100 active:scale-95 transition-all flex items-center gap-1"
+              >
+                <span>↺</span> Clear
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-500 font-marker text-sm sm:text-base hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePlaceOnPage}
+                  className="px-6 py-2 bg-[#EC4899] hover:bg-[#DB2777] text-white border-2 border-black rounded-full font-marker font-bold text-base sm:text-lg shadow-[3px_3px_0px_#18181B] hover:shadow-[4px_4px_0px_#18181B] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5"
+                >
+                  <span>✨ Place on Page!</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const navItems = [
       { label: 'Home', key: 'home' },
       { label: 'About', key: 'about' },
@@ -864,6 +1106,52 @@
           } catch (_) {}
           return next;
         });
+      };
+
+      // Custom User-drawn Doodles (stored in localStorage)
+      const [customDoodles, setCustomDoodles] = useState(() => {
+        try {
+          const saved = localStorage.getItem('saloni_user_custom_doodles');
+          return saved ? JSON.parse(saved) : [];
+        } catch (_) {
+          return [];
+        }
+      });
+      const [doodleModalOpen, setDoodleModalOpen] = useState(false);
+
+      const addCustomDoodle = (dataUrl) => {
+        const newDoodle = {
+          id: `custom_doodle_${Date.now()}`,
+          dataUrl,
+          createdAt: Date.now(),
+          // Default initial placement in the upper-middle of viewport
+          x: Math.max(20, Math.min(window.innerWidth - 180, window.innerWidth / 2 - 80 + (Math.random() * 60 - 30))),
+          y: Math.max(120, window.scrollY + 160 + (Math.random() * 50 - 25))
+        };
+        setCustomDoodles(prev => {
+          const updated = [...prev, newDoodle];
+          try {
+            localStorage.setItem('saloni_user_custom_doodles', JSON.stringify(updated));
+          } catch (_) {}
+          return updated;
+        });
+      };
+
+      const removeCustomDoodle = (id) => {
+        setCustomDoodles(prev => {
+          const updated = prev.filter(d => d.id !== id);
+          try {
+            localStorage.setItem('saloni_user_custom_doodles', JSON.stringify(updated));
+          } catch (_) {}
+          return updated;
+        });
+      };
+
+      const clearAllCustomDoodles = () => {
+        try {
+          localStorage.removeItem('saloni_user_custom_doodles');
+        } catch (_) {}
+        setCustomDoodles([]);
       };
 
       const resetDoodlePositions = () => {
@@ -991,16 +1279,26 @@
                 ))}
               </nav>
 
-              {/* Top Right: Reset Doodles (visible if any doodle moved) + Let's Talk CTA */}
+              {/* Top Right: Draw Doodle + Reset Doodles (visible if any doodle moved) + Let's Talk CTA */}
               <div className="flex items-center gap-2 sm:gap-3">
+                {/* Draw Custom Doodle Button */}
+                <button
+                  onClick={() => setDoodleModalOpen(true)}
+                  title="Draw your own doodle and place it anywhere!"
+                  className="font-marker text-xs sm:text-sm bg-pink-100 hover:bg-pink-200 text-pink-900 border border-pink-400 px-3 sm:px-3.5 py-1.5 rounded-full shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="text-sm">✏️</span>
+                  <span>Doodle</span>
+                </button>
+
                 {hasMovedDoodles && (
                   <button
                     onClick={resetDoodlePositions}
                     title="Reset all doodles to their original default positions"
-                    className="font-marker text-xs sm:text-sm bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-400 px-3 py-1 rounded-full shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-1 cursor-pointer"
+                    className="font-marker text-xs sm:text-sm bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-400 px-3 py-1.5 rounded-full shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-1 cursor-pointer"
                   >
                     <span>↺</span>
-                    <span className="hidden sm:inline">Reset Doodles</span>
+                    <span className="hidden sm:inline">Reset</span>
                   </button>
                 )}
                 <div className="relative inline-flex items-center justify-center group">
@@ -2283,6 +2581,69 @@
             )}
 
           </main>
+
+          {/* User's Placed Custom Doodles (Interactive Draggable Stickers) */}
+          {customDoodles.map((doodle) => (
+            <div
+              key={doodle.id}
+              className="fixed z-[9990] group select-none pointer-events-auto"
+              style={{
+                left: `${doodle.x}px`,
+                top: `${doodle.y}px`,
+              }}
+            >
+              <DraggableDoodle id={doodle.id}>
+                <div className="relative group/custom inline-block p-1">
+                  <img
+                    src={doodle.dataUrl}
+                    alt="Custom Doodle"
+                    className="max-w-[140px] sm:max-w-[190px] h-auto object-contain filter drop-shadow-[2px_3px_0px_rgba(0,0,0,0.15)] transition-transform hover:scale-105 active:scale-95"
+                    draggable={false}
+                  />
+                  {/* Delete button when hovered */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCustomDoodle(doodle.id);
+                    }}
+                    title="Remove this doodle"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold flex items-center justify-center opacity-0 group-hover/custom:opacity-100 transition-opacity border-2 border-white shadow-md cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </DraggableDoodle>
+            </div>
+          ))}
+
+          {/* Floating Bottom-Right Quick "Draw Doodle" FAB */}
+          <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[9995] flex items-center gap-2">
+            {customDoodles.length > 0 && (
+              <button
+                onClick={clearAllCustomDoodles}
+                title="Clear all your custom placed doodles"
+                className="bg-white/95 hover:bg-rose-50 text-rose-600 border-2 border-black px-3 py-1.5 rounded-full font-marker text-xs sm:text-sm shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <span>🗑️</span>
+                <span className="hidden sm:inline">Clear My Doodles</span>
+              </button>
+            )}
+            <button
+              onClick={() => setDoodleModalOpen(true)}
+              title="Draw your own doodle and place it anywhere!"
+              className="bg-[#FCE7F3] hover:bg-[#FBCFE8] text-pink-900 border-2 border-black px-4 sm:px-5 py-2.5 rounded-full font-marker font-bold text-base sm:text-lg shadow-[3px_4px_0px_#18181B] hover:shadow-[4px_5px_0px_#18181B] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-2 cursor-pointer group"
+            >
+              <span className="text-xl group-hover:rotate-12 transition-transform">✏️</span>
+              <span>Draw Doodle</span>
+            </button>
+          </div>
+
+          {/* Custom Doodle Drawing Modal */}
+          <CustomDoodleModal
+            isOpen={doodleModalOpen}
+            onClose={() => setDoodleModalOpen(false)}
+            onSaveDoodle={addCustomDoodle}
+          />
 
         </div>
         </DoodleDragContext.Provider>
