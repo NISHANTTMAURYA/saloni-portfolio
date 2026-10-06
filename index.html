@@ -639,7 +639,7 @@
       );
     }
 
-    /* --- SMOOTH PENCIL / SKETCHPEN DRAWING CURSOR EFFECT --- */
+    /* --- SMOOTH MULTI-COLOR SKETCHPEN DRAWING CURSOR EFFECT WITH PARALLAX --- */
     function PencilDrawingCursor() {
       const canvasRef = useRef(null);
 
@@ -656,59 +656,153 @@
         };
         window.addEventListener('resize', onResize);
 
-        // Historical cursor points
+        // Vibrant yet soft portfolio marker palette (Rose, Amber, Emerald, Sky Blue, Violet, Magenta)
+        const PALETTE = [
+          [244, 63, 94],   // Rose #F43F5E
+          [245, 158, 11],  // Amber #F59E0B
+          [16, 185, 129],  // Emerald #10B981
+          [2, 132, 199],   // Sky #0284C7
+          [139, 92, 246],  // Violet #8B5CF6
+          [236, 72, 153],  // Pink #EC4899
+        ];
+
+        // Smooth physics state
+        let mouse = { x: -100, y: -100, speed: 0 };
+        let brush = { x: -100, y: -100 };
+        let shadowBrush = { x: -100, y: -100 };
+        let lastRaw = { x: -100, y: -100 };
+        let colorStep = 0;
+        let isMoving = false;
+        let lastMoveTime = 0;
+
         const points = [];
         let animId = null;
 
         const onPointerMove = (e) => {
-          // Ignore touch devices so it doesn't obstruct scrolling on mobile
           if (e.pointerType === 'touch') return;
-          points.push({
-            x: e.clientX,
-            y: e.clientY,
-            time: Date.now()
-          });
-          if (points.length > 36) points.shift();
+          const px = e.clientX;
+          const py = e.clientY;
+
+          if (mouse.x < 0) {
+            mouse.x = brush.x = shadowBrush.x = lastRaw.x = px;
+            mouse.y = brush.y = shadowBrush.y = lastRaw.y = py;
+          }
+
+          const dist = Math.hypot(px - lastRaw.x, py - lastRaw.y);
+          colorStep += dist * 0.007;
+          mouse.speed = Math.min(dist * 0.45, 14);
+          mouse.x = px;
+          mouse.y = py;
+          lastRaw.x = px;
+          lastRaw.y = py;
+          isMoving = true;
+          lastMoveTime = Date.now();
         };
 
         window.addEventListener('pointermove', onPointerMove, { passive: true });
 
+        const getColorAt = (step) => {
+          const count = PALETTE.length;
+          const normalized = ((step % count) + count) % count;
+          const idx = Math.floor(normalized);
+          const nextIdx = (idx + 1) % count;
+          const frac = normalized - idx;
+          const c1 = PALETTE[idx];
+          const c2 = PALETTE[nextIdx];
+          return [
+            Math.round(c1[0] + (c2[0] - c1[0]) * frac),
+            Math.round(c1[1] + (c2[1] - c1[1]) * frac),
+            Math.round(c1[2] + (c2[2] - c1[2]) * frac),
+          ];
+        };
+
         const render = () => {
           ctx.clearRect(0, 0, width, height);
-
           const now = Date.now();
-          // Filter out points older than 650ms for smooth vanishing pencil trail
-          while (points.length > 0 && now - points[0].time > 650) {
+
+          // Smooth lerp following mouse
+          const dx = mouse.x - brush.x;
+          const dy = mouse.y - brush.y;
+          brush.x += dx * 0.38;
+          brush.y += dy * 0.38;
+
+          // Parallax depth follower (slower easing produces dynamic parallax offset)
+          const sdx = brush.x - shadowBrush.x;
+          const sdy = brush.y - shadowBrush.y;
+          shadowBrush.x += sdx * 0.18;
+          shadowBrush.y += sdy * 0.18;
+
+          // Parallax vector based on cursor velocity/lead
+          const parallaxX = (brush.x - shadowBrush.x) * 0.45;
+          const parallaxY = (brush.y - shadowBrush.y) * 0.45;
+
+          const moved = Math.hypot(dx, dy);
+          if (moved > 0.4 && (now - lastMoveTime < 180)) {
+            const rgb = getColorAt(colorStep);
+            points.push({
+              x: brush.x,
+              y: brush.y,
+              px: parallaxX,
+              py: parallaxY,
+              rgb,
+              width: Math.max(3.2, Math.min(6.5, 3.4 + mouse.speed * 0.32)),
+              time: now
+            });
+            if (points.length > 55) points.shift();
+          }
+
+          // Expire old strokes after 700ms
+          while (points.length > 0 && now - points[0].time > 700) {
             points.shift();
           }
 
-          if (points.length > 1) {
+          if (points.length > 2) {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
+            // LAYER 1: Parallax Floating Shadow/Wash (gives 3D depth floating behind)
             for (let i = 1; i < points.length; i++) {
               const p0 = points[i - 1];
               const p1 = points[i];
-              const age = (now - p1.time) / 650;
+              const age = (now - p1.time) / 700;
+              const alpha = Math.max(0, 1 - age) * 0.18;
+
+              const midX = ((p0.x + p0.px) + (p1.x + p1.px)) / 2;
+              const midY = ((p0.y + p0.py) + (p1.y + p1.py)) / 2;
+
+              ctx.beginPath();
+              ctx.moveTo(p0.x + p0.px, p0.y + p0.py);
+              ctx.quadraticCurveTo(p0.x + p0.px, p0.y + p0.py, midX, midY);
+              const [r, g, b] = p1.rgb;
+              ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+              ctx.lineWidth = p1.width + 4.0;
+              ctx.stroke();
+            }
+
+            // LAYER 2: Main Rich Sketchpen Stroke
+            for (let i = 1; i < points.length; i++) {
+              const p0 = points[i - 1];
+              const p1 = points[i];
+              const age = (now - p1.time) / 700;
               const alpha = Math.max(0, 1 - age);
 
               const midX = (p0.x + p1.x) / 2;
               const midY = (p0.y + p1.y) / 2;
 
-              // Primary smooth graphite / sketchpen stroke
               ctx.beginPath();
               ctx.moveTo(p0.x, p0.y);
               ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
-              ctx.strokeStyle = `rgba(39, 39, 42, ${alpha * 0.45})`;
-              ctx.lineWidth = 2.0;
+              const [r, g, b] = p1.rgb;
+              ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.85})`;
+              ctx.lineWidth = p1.width;
               ctx.stroke();
 
-              // Secondary fine pencil grain accent for authentic sketch look
+              // LAYER 3: Soft sketchpen gloss / highlight core
               ctx.beginPath();
-              ctx.moveTo(p0.x + 0.5, p0.y - 0.5);
-              ctx.lineTo(midX + 0.5, midY - 0.5);
-              ctx.strokeStyle = `rgba(82, 82, 91, ${alpha * 0.28})`;
-              ctx.lineWidth = 1.0;
+              ctx.moveTo(p0.x, p0.y);
+              ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+              ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.35})`;
+              ctx.lineWidth = Math.max(1, p1.width * 0.35);
               ctx.stroke();
             }
           }
