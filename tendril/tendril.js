@@ -555,6 +555,16 @@
       this.points[lastIdx].px = x;
       this.points[lastIdx].py = y;
 
+      // Immediately distribute all intermediate points along the tendon from head to anchor
+      var h = this.points[0];
+      for (var pIdx = 1; pIdx < lastIdx; pIdx++) {
+        var frac = pIdx / lastIdx;
+        this.points[pIdx].x = h.x + (x - h.x) * frac;
+        this.points[pIdx].y = h.y + (y - h.y) * frac;
+        this.points[pIdx].px = this.points[pIdx].x;
+        this.points[pIdx].py = this.points[pIdx].y;
+      }
+
       this.anchorNode.setAttribute('cx', r1(x));
       this.anchorNode.setAttribute('cy', r1(y));
       this.anchorNode.setAttribute('r', (this.opts.headRadius * 1.25).toFixed(1));
@@ -716,16 +726,17 @@
     var blurComp = Math.max(1.0, this.opts.gooeyBlur / 5.5);
 
     for (var i = 0; i < count; i++) {
-      var a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
-      var speed = (2.0 + Math.random() * baseSpeed);
-      var r = (4.0 + Math.random() * 6.5) * sizeMult * blurComp;
+      // Natural downward pouring arc (angles pointing downwards)
+      var a = Math.PI / 2 + (Math.random() - 0.5) * 1.5;
+      var speed = (2.2 + Math.random() * baseSpeed);
+      var r = (4.5 + Math.random() * 6.5) * sizeMult * blurComp;
 
       var p = this._spawn(
         2,
-        x + (Math.random() - 0.5) * 8,
-        y + (Math.random() - 0.5) * 8,
+        x + (Math.random() - 0.5) * 10,
+        y + (Math.random() - 0.5) * 6,
         Math.cos(a) * speed,
-        Math.sin(a) * speed,
+        Math.abs(Math.sin(a) * speed), // Guaranteed downward velocity (falls DOWN!)
         r,
         0
       );
@@ -797,23 +808,26 @@
         tail.x = this.anchor.x;
         tail.y = this.anchor.y;
 
-        // Subtle gravitational droop proportional to stretch distance
-        var distHtoT = Math.hypot(this.target.x - this.anchor.x, this.target.y - this.anchor.y);
-        var maxSag = Math.min(32, distHtoT * 0.06);
+        // Gravitational catenary droop proportional to stretch distance
+        var distHtoT = Math.hypot(h.x - tail.x, h.y - tail.y);
+        var maxSag = Math.min(48, distHtoT * 0.08);
 
-        // Smooth continuous relaxation along the tendon
+        // Distribute points evenly along the line between head and anchor with catenary sag
         for (var idx = 1; idx < n - 1; idx++) {
           var curr = pts[idx];
           curr.px = curr.x; curr.py = curr.y;
-          var prev = pts[idx - 1];
-          var next = pts[idx + 1];
 
-          var midX = (prev.x + next.x) * 0.5;
-          var midY = (prev.y + next.y) * 0.5;
-          var sag = Math.sin((idx / n) * Math.PI) * maxSag;
+          var frac = idx / (n - 1);
+          var lineX = h.x + (tail.x - h.x) * frac;
+          var lineY = h.y + (tail.y - h.y) * frac;
+          var sag = Math.sin(frac * Math.PI) * maxSag;
 
-          var diffX = (midX - curr.x) * 0.42;
-          var diffY = (midY + sag - curr.y) * 0.42;
+          var targetX = lineX;
+          var targetY = lineY + sag;
+
+          // Smooth spring relaxation
+          var diffX = (targetX - curr.x) * 0.58;
+          var diffY = (targetY - curr.y) * 0.58;
 
           curr.x += diffX;
           curr.y += diffY;
@@ -861,10 +875,10 @@
     var restLen = (n - 1) * 14;
     var stretchRatio = Math.max(1.0, totalLen / restLen);
 
-    // Continuum mechanics & Volume Conservation (Poisson's Effect):
-    // As the cord stretches, thickness necks down smoothly inversely with sqrt(stretchRatio)
+    // Volume Conservation: cord thins when stretched, but NEVER drops below SVG gooey filter visibility!
+    // With gooey blur of 7px, stroke must stay >= 7.0px and node radius >= 6.0px to stay gooey & visible
     var effectiveStroke = this.isAnchored
-      ? Math.max(2.2, this.opts.strokeWidth / Math.sqrt(stretchRatio))
+      ? Math.max(7.2, this.opts.strokeWidth / Math.pow(stretchRatio, 0.28))
       : this.opts.strokeWidth;
     this.rope.setAttribute('stroke-width', r1(effectiveStroke));
 
@@ -879,8 +893,8 @@
       if (j === 0) {
         c.setAttribute('r', r1(pt.radius * this.headScale));
       } else if (this.isAnchored) {
-        // Intermediate nodes neck down seamlessly with the stroke to eliminate bulbous lumps
-        var nodeRad = Math.max(effectiveStroke * 0.52, pt.radius / Math.sqrt(stretchRatio));
+        // Intermediate nodes stay plump to bridge the gooey liquid path
+        var nodeRad = Math.max(6.2, pt.radius / Math.pow(stretchRatio, 0.28));
         c.setAttribute('r', r1(nodeRad));
       } else {
         c.setAttribute('r', r1(pt.radius));

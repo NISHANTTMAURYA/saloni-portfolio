@@ -1083,10 +1083,6 @@
           <span>💧 Spill Liquid</span>
         </button>
 
-        <button class="action-btn-secondary" id="severDropBtn" onclick="triggerSeverRope()" data-cursor-hover="true" style="display:none;">
-          <span>✂️ Sever &amp; Drop Rope</span>
-        </button>
-
         <button id="mainHoverBtn" class="HoverButton" data-cursor-hover="true">
           <div class="bg-slider"></div>
           <span class="btn-label">
@@ -1785,7 +1781,6 @@ Please adapt this for my site structure.`
       const hudText = document.getElementById('hudText');
       const btnIcon = document.getElementById('anchorBtnIcon');
       const btnLabel = document.getElementById('anchorBtnLabel');
-      const severBtn = document.getElementById('severDropBtn');
       const bannerSeverBtn = document.getElementById('bannerSeverBtn');
       const bannerAnchorBtn = document.getElementById('bannerAnchorBtn');
       const bannerTitle = document.getElementById('guideTitle');
@@ -1797,7 +1792,6 @@ Please adapt this for my site structure.`
         hudText.textContent = 'ANCHORED & STRETCHING';
         btnIcon.textContent = '✂️';
         btnLabel.textContent = 'Sever & Drop Rope';
-        if (severBtn) severBtn.style.display = 'inline-flex';
         if (bannerSeverBtn) bannerSeverBtn.style.display = 'inline-block';
         if (bannerAnchorBtn) bannerAnchorBtn.textContent = '✂️ Sever Rope';
         bannerTitle.textContent = '⚓ Tail Anchored! Move away to stretch the tendon:';
@@ -1808,7 +1802,6 @@ Please adapt this for my site structure.`
         hudText.textContent = 'FREE ROPE';
         btnIcon.textContent = '⚓';
         btnLabel.textContent = 'Drop Anchor (Triple-Tap)';
-        if (severBtn) severBtn.style.display = 'none';
         if (bannerSeverBtn) bannerSeverBtn.style.display = 'none';
         if (bannerAnchorBtn) bannerAnchorBtn.textContent = '⚓ Drop Anchor Here';
         bannerTitle.textContent = '⚓ 2-Stage Triple-Tap Anchor & Falling Physics Rope:';
