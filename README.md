@@ -101,18 +101,77 @@ Handmade-style developer, founder & UI/UX portfolio with cursor-tracking chibi 2
   - Added authentic asymmetrical hand-drawn rotations (`-rotate-2`, `rotate-6`, `rotate-12`, `-rotate-8`, `rotate-3`, etc.) to break rigid symmetry.
 * **Deep Linking & Hash Navigation:**
   - Added synchronized hash routing (`#home`, `#projects`, `#experience`, `#about`, `#contact`) with `window.onhashchange` listener for native browser history and deep linking.
-* **Contact Page Emoji Doodles Expansion & Enlargement:**
-  - Expanded and enlarged doodles on the Contact view (`#contact`) to `w-32 xl:w-36` and `w-36 xl:w-40` across wide desktop gutters:
-    - **Left Flank:**
-      1. *Chat Speech Bubbles* (`w-32 xl:w-36`, `#F43F5E`, "say hello! 💬")
-      2. *Big 5-Point Sketch Star & Twinkles* (`w-28 xl:w-32`, `#F59E0B`, "big ideas ⭐")
-      3. *Double Hearts Doodle* (`w-32 xl:w-36`, `#E11D48`, "made with love 💖")
-    - **Right Flank:**
-      4. *Soaring Paper Airplane* (`w-36 xl:w-40`, `#10B981`, "direct reach ↗")
-      5. *Smiling Sunshine / Happy Face* (`w-28 xl:w-32`, `#F59E0B`, "good vibes 😊")
-      6. *Flying Mail Envelope* (`w-36 xl:w-40`, `#3B82F6`, "open to connect! ✉️")
-  - Added mobile responsive fallback row beneath the contact action button.
-  - Guaranteed zero overlap with the contact card and headers with >140px safe buffer.
+* **Hand-Drawn Queen Crown Doodle on Hero Character:**
+  - Added a regal, authentic hand-drawn Queen Crown doodle 👑 perched right atop Saloni's wavy hair on the Home page hero sticker.
+  - Features 5 sketchbook peaks, arched rose headband, ruby, emerald, sapphire and gold gems, pearl tips, and side twinkling star sparkles.
+  - Tilted at `rotate-[14deg]` to match Saloni's posture looking up towards the coffee mug and good vibes.
+* **Randomized & Scattered Contact Page Doodles:**
+  - Broke the rigid 3x2 vertical column layout into an organic, scattered sketchbook spread with varying X/Y offsets and playful rotations.
+* **Experience Page Randomized Side Flank Doodles:**
+  - Relocated and scattered the doodles on `#experience` into desktop **side flank gutters** with completely asymmetrical heights and randomized sizes:
+    - **Left Flank:** *Growth Step Chart & Trajectory* (`w-26 xl:w-28`, `#0284C7`, "growth steps 📈", high at `top-[26%]`, tilted `-rotate-8`) + *Golden Starburst Accent* (low at `top-[68%]`).
+    - **Right Flank:** *Mint Paper Airplane Accent* (high at `top-[24%]`, tilted `-rotate-12`) + *Sweetscape Chef Hat & Whisk* (`w-26 xl:w-28`, `#F43F5E`, "sweetscape baker 👩‍🍳", mid-low at `top-[52%]`, tilted `rotate-8`).
+  - Constrained the 4 experience cards to `max-w-[990px] mx-auto` to guarantee zero overlap.
+
+---
+
+## 🎨 How to Add New Doodles (Complete Developer Guide)
+
+Follow this guide whenever adding or customizing hand-drawn doodles across the website.
+
+### 1. Scribo Hand-Drawn Design Rules
+- **Line & Stroke Aesthetic:**
+  - Always use `strokeLinecap="round"` and `strokeLinejoin="round"`.
+  - Recommended stroke thickness: `strokeWidth="3.2"` to `4.2"` (gives an authentic gel pen / sketch marker stroke).
+  - Outlines should generally be either dark charcoal (`#18181B` / `#1F1F1F`) or bold thematic colors (`#E11D48`, `#0284C7`, `#10B981`, `#D97706`).
+- **Color Palette:**
+  - **Fills:** Soft pastel background tones (`#FEF3C7`, `#FFE4E6`, `#DBEAFE`, `#D1FAE5`, `#F3E8FF`).
+  - **Strokes / Accents:** Vibrant sketch ink tones (`#F59E0B`, `#E11D48`, `#2563EB`, `#059669`, `#7C3AED`).
+- **Organic Sketchbook Tilts:**
+  - Never place doodles rigidly flat. Always add playful rotations: `-rotate-12`, `-rotate-6`, `-rotate-2`, `rotate-3`, `rotate-6`, or `rotate-12`.
+
+---
+
+### 2. Copy-Paste Doodle Code Template
+
+Wrap your SVG doodle inside a positioned container with `pointer-events-none`:
+
+```jsx
+{/* Example: Cute Hand-Drawn Doodle */}
+<div className="hidden xl:block absolute top-[48%] -translate-y-1/2 left-2 pointer-events-none opacity-95 transform -rotate-6 z-20 text-center">
+  <svg 
+    className="w-28 xl:w-32 h-28 xl:h-32 text-[#F59E0B] drop-shadow-sm" 
+    viewBox="0 0 100 100" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="3.6" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    {/* Pastel Fill Path */}
+    <path d="M 50 12 L 60 38 L 88 38 L 66 54 L 74 80 L 50 64 L 26 80 L 34 54 L 12 38 L 40 38 Z" fill="#FEF3C7" />
+    
+    {/* Sketch Stroke Path */}
+    <path d="M 50 12 L 60 38 L 88 38 L 66 54 L 74 80 L 50 64 L 26 80 L 34 54 L 12 38 L 40 38 Z" stroke="#D97706" strokeWidth="3.8" />
+  </svg>
+  
+  {/* Handwritten Marker Label */}
+  <div className="font-marker font-bold text-sm text-[#D97706] -mt-1 rotate-2">
+    big ideas ⭐
+  </div>
+</div>
+```
+
+---
+
+### 3. Critical Rules to Avoid Bugs
+
+| Rule | Why It Matters | Correct Pattern |
+| :--- | :--- | :--- |
+| **Use Standard Tailwind Sizing** | Non-standard classes like `w-18`, `w-22` **do not exist** in Tailwind CDN. Using them causes SVGs to have no CSS width, making them explode to 100% full container width. | Use `w-16` (64px), `w-20` (80px), `w-24` (96px), `w-28` (112px), `w-32` (128px), `w-36` (144px), `w-40` (160px). |
+| **Avoid Negative Offsets on 1280px Displays** | Using extreme negative positions like `-left-20` on a 1280px display causes doodles to get clipped by `overflow-x: hidden`. | Keep side doodles inside positive coordinates (`left-0`, `left-2`, `right-0`, `right-2`) and constrain central content (`max-w-[990px]` or `max-w-2xl`). |
+| **Always Use `pointer-events-none`** | Doodles sit above or near cards and buttons. If pointer events are active, users cannot click cards, inputs, or links underneath. | Add `pointer-events-none` to doodle containers. |
+| **Responsive Visibility** | Side flank gutters only have room on wider screens (`xl:` / `2xl:`). On phones and tablets, doodles will collide with text. | Use `hidden xl:block` or `hidden lg:block` for side flank doodles, or create a dedicated mobile flex row (`lg:hidden`). |
 
 ---
 
