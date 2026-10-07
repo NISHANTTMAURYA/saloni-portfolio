@@ -175,15 +175,28 @@ Wrap your SVG doodle inside a positioned container with `pointer-events-none`:
 
 ---
 
+## 💧 Liquid Rope & Ink Cursor Engine (Tendril.js)
+
+The portfolio and repository include the standalone physics engine **`liquid-rope-cursor/`** (also distributed as **`tendril/`**):
+* **Page-Aware Rope Length**: Inspects `document.documentElement.scrollHeight` via `usePageLength: true` so the rope weaves across the entire scrollable page without snapping.
+* **Massive Offset Capacity**: Configurable `offsetSize: 6000` and `ropeLengthOffset: 6000` with deep catenary droop (`ropeSlack: 0.42`, `ropeMinSlack: 42`).
+* **Multi-Checkpoint Weaving & Severed Falling Ropes**: Triple-click anywhere to anchor or sever into real Verlet falling ropes.
+* **Interactive Playground & Documentation Website**: Open `hybrid-cursor-showcase.html` or `liquid-rope-cursor/index.html` to test all modes, customize sliders, and copy framework snippets.
+
+---
+
 ## 🚀 How to Run Locally
 
 ```bash
-# Simply open in any modern web browser
+# Portfolio Website:
 open index.html
-```
 
-Or view the curated arrow library gallery:
-```bash
+# Liquid Rope Cursor Package Website & Interactive Playground:
+open hybrid-cursor-showcase.html
+# or:
+open liquid-rope-cursor/index.html
+
+# Curated arrow library gallery:
 open public/arrows_gallery.html
 ```
 

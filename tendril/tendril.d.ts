@@ -47,13 +47,41 @@ export interface TendrilOptions {
   dripTrail?: boolean;
   /** Triple-tap to anchor tail and sever falling ropes. Default: true */
   tripleTapAnchor?: boolean;
+  /** Anchor interaction mode ('multi' | 'single' | 'off'). Default: 'multi' */
+  anchorMode?: 'multi' | 'single' | 'off';
+  /** In 'single' mode: gentle smooth spring pull toward new anchor point. Default: 0.016 */
+  anchorFollowStiffness?: number;
+  /** In 'single' mode: viscous liquid damping. Default: 0.88 */
+  anchorFollowDamping?: number;
   /** Allows planting multiple sequential stop checkpoints across the screen. Default: true */
   multiCheckpoints?: boolean;
-  /** Maximum ms between taps to count as a triple-tap. Default: 380 */
+  /** Maximum ms between taps to count as a triple-tap. Default: 480 */
   tripleTapMaxInterval?: number;
-  /** Automatically blocks accidental text selection during rapid multi-taps. Default: true */
+  /** Automatically blocks accidental text selection during rapid multi-taps. Default: false */
   preventTextSelectOnTap?: boolean;
-  /** Gravitational acceleration for detached ropes. Default: 0.42 */
+  /** Max rope length in px (0 = auto-calculated). Default: 0 */
+  ropeLength?: number;
+  /** Dynamically incorporates the full page/document scrollable length to decide max rope length. Default: true */
+  usePageLength?: boolean;
+  /** Multiplier factor applied to scrollable page length. Default: 1.15 */
+  pageLengthRatio?: number;
+  /** Extra pixel offset capacity added to page/screen rope length. Default: 6000 */
+  ropeLengthOffset?: number;
+  /** General offset size of the rope (alias for ropeLengthOffset or base slack offset). Default: 6000 */
+  offsetSize?: number;
+  /** Maximum slack fraction when cursor is close to anchor pins. Default: 0.42 */
+  ropeSlack?: number;
+  /** Minimum base slack offset in px so short cords droop expressively. Default: 42 */
+  ropeMinSlack?: number;
+  /** Sensitivity multiplier for rope tightening and loosening (0.2 = loose/sluggish, 1.0 = standard, 2.5 = hyper-reactive). Default: 1.0 */
+  ropeTensionSensitivity?: number;
+  /** Downward gravity pull for anchored rope joints. Default: 0.42 */
+  ropeGravity?: number;
+  /** Velocity retention per frame for rope physics. Default: 0.955 */
+  ropeDamping?: number;
+  /** Number of Verlet constraint solver passes (higher = less stretchy). Default: 14 */
+  ropeIterations?: number;
+  /** Gravitational acceleration for detached ropes. Default: 0.65 */
   severedRopeGravity?: number;
   /** Air resistance for detached ropes. Default: 0.985 */
   severedRopeDrag?: number;

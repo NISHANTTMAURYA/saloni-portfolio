@@ -38,8 +38,8 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Liquid Rope Cursor Engine (Direct from folder) -->
-  <script src="liquid-rope-cursor/liquid-rope-cursor.js"></script>
+  <!-- Tendril Cursor: Clean 1-Line Zero-Config Integration as documented on website -->
+  <script src="tendril.js" data-tendril></script>
 
   <style>
     /* Consistent Hand-Drawn Aesthetic across entire portfolio */
@@ -642,48 +642,6 @@
       );
     }
 
-    /* --- LIQUID ROPE & INK CURSOR (DIRECT FROM ./liquid-rope-cursor/ ENGINE) --- */
-    function LiquidRopeCursor() {
-      useEffect(() => {
-        // Adapt dynamically to Tendril / LiquidRopeCursor exported by liquid-rope-cursor/liquid-rope-cursor.js
-        const Engine = window.LiquidRopeCursor || window.Tendril || window.TendrilCursor || window.HybridInkRopeCursor;
-        if (!Engine) return;
-
-        let instance = null;
-        try {
-          instance = new Engine({
-            color: '#ec4899',         // Sweet marker pink to match portfolio aesthetic
-            secondaryColor: '#f472b6',
-            segments: 24,
-            segTau: 36,
-            gooeyBlur: 7,
-            strokeWidth: 10,
-            spillOnClick: true,
-            splashOnClick: true,
-            spillCount: 16,
-            gravity: 0.38,
-            dripTrail: true,
-            forceTouch: true,         // Ensure it renders across all environments/emulators
-            usePageLength: true,      // Dynamically uses the full page scroll length to decide rope length
-            offsetSize: 6000,         // Increased offset size of the rope
-            ropeLengthOffset: 6000,   // Extra capacity offset for traversing long page sections
-            ropeSlack: 0.42,          // Catenary sag offset factor
-            ropeMinSlack: 42,         // Minimum base droop offset (px)
-            hoverSelector: 'a, button, [role="button"], input, textarea, select, label, .interactive, [data-cursor-hover], .draggable-doodle'
-          });
-        } catch (err) {
-          console.error("Failed to initialize LiquidRopeCursor:", err);
-        }
-
-        return () => {
-          if (instance && typeof instance.destroy === 'function') {
-            instance.destroy();
-          }
-        };
-      }, []);
-
-      return null;
-    }
 
     /* --- FRAMER-STYLE FLUID CURSOR REVEAL HERO IMAGE ---
        - True Ping-Pong WebGL FBO Fluid simulation identical to cursorreveal.framer.website
@@ -1244,8 +1202,7 @@
 
       return (
         <DoodleDragContext.Provider value={{ positions: doodlePositions, updatePos: updateDoodlePos, resetPositions: resetDoodlePositions, hasMoved: hasMovedDoodles }}>
-          {/* Liquid Rope & Ink Cursor Engine (direct from ./liquid-rope-cursor/) */}
-          <LiquidRopeCursor />
+
           <div className="min-h-full w-full flex flex-col justify-between flex-1 mx-auto relative px-2 sm:px-6 lg:px-8 2xl:px-12">
           {/* Global Whiteboard Scribble / Scratch Reveal SVG Mask (remounts cleanly on every view change) */}
           <svg width="0" height="0" className="absolute pointer-events-none" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">

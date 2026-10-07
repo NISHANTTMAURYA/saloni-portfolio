@@ -5,6 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tendril.js — Liquid Rope &amp; Ink Cursor Engine (Docs &amp; Interactive Playground)</title>
   <meta name="description" content="Production-ready liquid rope cursor engine. Features 1:1 natural pointer tracking, multi-checkpoint waypoint weaving, severed falling rope physics, text reveal difference lens, mobile phone touch trails, and gravitational liquid spills.">
+  <link rel="alternate" type="text/markdown" href="llms.txt" title="AI Agent LLM Documentation">
+  <link rel="alternate" type="application/json" href="ai-settings.json" title="Machine-Readable Settings Specification">
+
+  <!-- Machine-Readable Schema for AI Agents & Search Engines -->
+  <script type="application/ld+json" id="ai-agent-schema">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Tendril.js",
+    "alternateName": "Liquid Rope & Ink Cursor Physics Engine",
+    "description": "Zero-dependency physical cursor engine combining SVG gooey fluid dynamics, difference lens, and Verlet kinematics.",
+    "url": "https://nishanttmaurya.github.io/saloni-portfolio/hybrid-cursor-showcase.html",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "All modern browsers",
+    "featureList": [
+      "Page-aware rope length scaling across full scrollable document height",
+      "Configurable extra offset capacity (offsetSize: 6000px)",
+      "Multi-checkpoint waypoint weaving and single-anchor following",
+      "Verlet integration severed falling ropes with gravity and drag",
+      "Ricardo Mendieta difference blend mode text inversion lens",
+      "Gravitational liquid spills and phone touch trails"
+    ]
+  }
+  </script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -839,8 +863,149 @@
       border-radius: 50%;
       background: var(--accent);
       box-shadow: 0 0 10px var(--accent-glow);
+    /* Studio Header Actions & Info Buttons */
+    .studio-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .studio-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      color: var(--text);
       cursor: none;
-      transition: transform 0.1s;
+      transition: all 0.2s ease;
+    }
+    .studio-pill-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+    .studio-pill-btn.ai-btn {
+      border-color: rgba(6, 182, 212, 0.35);
+      background: rgba(6, 182, 212, 0.08);
+      color: #0284c7;
+    }
+    body.dark-mode .studio-pill-btn.ai-btn {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .studio-pill-btn.ai-btn:hover {
+      background: #0284c7;
+      color: #fff;
+      border-color: #0284c7;
+    }
+    .slider-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .setting-info-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-card);
+      font-size: 0.70rem;
+      cursor: none;
+      color: var(--text-muted);
+      transition: all 0.18s ease;
+      line-height: 1;
+      padding: 0;
+    }
+    body.dark-mode .setting-info-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #9CA3AF;
+    }
+    .setting-info-btn:hover, .setting-info-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      transform: scale(1.15);
+    }
+    .setting-doc-drawer {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.035);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      animation: docSlideDown 0.18s ease-out;
+    }
+    @keyframes docSlideDown {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    body.dark-mode .setting-doc-drawer {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .setting-doc-drawer.open {
+      display: block;
+    }
+    .doc-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .api-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .doc-default {
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+      color: var(--text-muted);
+    }
+    .doc-desc {
+      margin: 0;
+      color: var(--text);
+      opacity: 0.88;
+    }
+
+    /* AI Agent Modal & JSON Display */
+    .ai-manifest-modal {
+      max-width: 720px;
+      width: 100%;
+    }
+    .ai-json-container {
+      background: var(--code-bg);
+      color: #e5e7eb;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      border-radius: 12px;
+      padding: 18px;
+      max-height: 380px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      user-select: text;
+      white-space: pre;
     }
 
     /* Developer Support & Bug Report Card */
@@ -1440,6 +1605,16 @@
           <h2>Color Studio &amp; Realtime Physics Deck</h2>
           <p>Pick any CSS color and adjust tension, blur, gravity, and blend modes live</p>
         </div>
+        <div class="studio-actions">
+          <button type="button" class="studio-pill-btn" id="btnToggleAllInfo" onclick="toggleAllSettingsInfo()" title="Toggle developer documentation for all settings" data-cursor-hover="true">
+            <span>ℹ️</span>
+            <span id="btnToggleAllInfoText">Developer Info</span>
+          </button>
+          <button type="button" class="studio-pill-btn ai-btn" onclick="openAiManifestModal()" title="View machine-readable specification for AI agents" data-cursor-hover="true">
+            <span>🤖</span>
+            <span>AI Agent Settings (JSON)</span>
+          </button>
+        </div>
       </div>
 
       <!-- Color Bar -->
@@ -1467,62 +1642,168 @@
         </div>
       </div>
 
-      <!-- Sliders -->
+      <!-- Sliders with Developer Info Drawers -->
       <div class="sliders-grid">
-        <div class="slider-card">
+        <div class="slider-card" data-setting="segTau">
           <div class="slider-header">
-            <span>Rope Tension (Lag)</span>
+            <div class="slider-title-wrap">
+              <span>Rope Tension (Lag)</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-segTau" onclick="toggleSettingInfo('segTau')" title="Click for developer info on segTau" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-tau">36 ms</span>
           </div>
-          <input type="range" id="slider-tau" min="15" max="80" value="36">
+          <input type="range" id="slider-tau" min="15" max="80" value="36" aria-describedby="doc-segTau">
+          <div class="setting-doc-drawer" id="doc-segTau">
+            <div class="doc-meta">
+              <span class="api-badge"><code>segTau</code> : number (ms)</span>
+              <span class="doc-default">Default: 36 · Range: 15–80ms</span>
+            </div>
+            <p class="doc-desc">Frame-rate independent exponential smoothing lag time constant per segment. Lower (15ms) = tight, snappy cursor follow; Higher (80ms) = loose floating trailing cord.</p>
+          </div>
         </div>
 
-        <div class="slider-card">
+        <div class="slider-card" data-setting="ropeTensionSensitivity">
           <div class="slider-header">
-            <span>Tension Sensitivity</span>
+            <div class="slider-title-wrap">
+              <span>Tension Sensitivity</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-ropeTensionSensitivity" onclick="toggleSettingInfo('ropeTensionSensitivity')" title="Click for developer info on ropeTensionSensitivity" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-sens">1.0x</span>
           </div>
-          <input type="range" id="slider-sens" min="0.2" max="2.5" step="0.1" value="1.0">
-        </div>
-
-        <div class="slider-card">
-          <div class="slider-header">
-            <span>Slack / Water Sag</span>
-            <span class="slider-val" id="val-slack">0.35</span>
+          <input type="range" id="slider-sens" min="0.2" max="2.5" step="0.1" value="1.0" aria-describedby="doc-ropeTensionSensitivity">
+          <div class="setting-doc-drawer" id="doc-ropeTensionSensitivity">
+            <div class="doc-meta">
+              <span class="api-badge"><code>ropeTensionSensitivity</code> : number</span>
+              <span class="doc-default">Default: 1.0 · Range: 0.2–2.5x</span>
+            </div>
+            <p class="doc-desc">Multiplier for dynamic tension build-up when cursor stretches away from anchor pins. 2.5x snaps spans taut rapidly; 0.2x keeps the cord relaxed and loose.</p>
           </div>
-          <input type="range" id="slider-slack" min="0.10" max="0.70" step="0.05" value="0.35">
         </div>
 
-        <div class="slider-card">
+        <div class="slider-card" data-setting="ropeSlack">
           <div class="slider-header">
-            <span>Tendon Thickness</span>
+            <div class="slider-title-wrap">
+              <span>Slack / Water Sag</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-ropeSlack" onclick="toggleSettingInfo('ropeSlack')" title="Click for developer info on ropeSlack" data-cursor-hover="true">ℹ️</button>
+            </div>
+            <span class="slider-val" id="val-slack">0.42</span>
+          </div>
+          <input type="range" id="slider-slack" min="0.10" max="0.70" step="0.05" value="0.42" aria-describedby="doc-ropeSlack">
+          <div class="setting-doc-drawer" id="doc-ropeSlack">
+            <div class="doc-meta">
+              <span class="api-badge"><code>ropeSlack</code> : number (fraction)</span>
+              <span class="doc-default">Default: 0.42 · Range: 0.10–0.70</span>
+            </div>
+            <p class="doc-desc">Maximum slack fraction when cursor is close to anchor pins. Governs catenary sag depth and gravitational water drooping.</p>
+          </div>
+        </div>
+
+        <div class="slider-card" data-setting="strokeWidth">
+          <div class="slider-header">
+            <div class="slider-title-wrap">
+              <span>Tendon Thickness</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-strokeWidth" onclick="toggleSettingInfo('strokeWidth')" title="Click for developer info on strokeWidth" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-width">9 px</span>
           </div>
-          <input type="range" id="slider-width" min="4" max="18" step="1" value="9">
+          <input type="range" id="slider-width" min="4" max="18" step="1" value="9" aria-describedby="doc-strokeWidth">
+          <div class="setting-doc-drawer" id="doc-strokeWidth">
+            <div class="doc-meta">
+              <span class="api-badge"><code>strokeWidth</code> : number (px)</span>
+              <span class="doc-default">Default: 9 · Range: 4–18px</span>
+            </div>
+            <p class="doc-desc">Base physical SVG stroke width of the central tendon spine. Features Poisson necking (thins down organically as cord stretches over long spans).</p>
+          </div>
         </div>
 
-        <div class="slider-card">
+        <div class="slider-card" data-setting="gooeyBlur">
           <div class="slider-header">
-            <span>Gooey Viscosity (Blur)</span>
+            <div class="slider-title-wrap">
+              <span>Gooey Viscosity (Blur)</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-gooeyBlur" onclick="toggleSettingInfo('gooeyBlur')" title="Click for developer info on gooeyBlur" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-blur">7 px</span>
           </div>
-          <input type="range" id="slider-blur" min="2" max="14" value="7">
+          <input type="range" id="slider-blur" min="2" max="14" value="7" aria-describedby="doc-gooeyBlur">
+          <div class="setting-doc-drawer" id="doc-gooeyBlur">
+            <div class="doc-meta">
+              <span class="api-badge"><code>gooeyBlur</code> : number (px)</span>
+              <span class="doc-default">Default: 7 · Range: 2–14px</span>
+            </div>
+            <p class="doc-desc">SVG feGaussianBlur radius in the #goo filter. Merged with high alpha contrast (gooeyContrast: 34) to fuse vertebrae into organic liquid rubber surface tension.</p>
+          </div>
         </div>
 
-        <div class="slider-card">
+        <div class="slider-card" data-setting="severedRopeGravity">
           <div class="slider-header">
-            <span>Severed Rope Gravity</span>
+            <div class="slider-title-wrap">
+              <span>Severed Rope Gravity</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-severedRopeGravity" onclick="toggleSettingInfo('severedRopeGravity')" title="Click for developer info on severedRopeGravity" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-grav">0.42</span>
           </div>
-          <input type="range" id="slider-grav" min="0.15" max="0.95" step="0.05" value="0.42">
+          <input type="range" id="slider-grav" min="0.15" max="0.95" step="0.05" value="0.42" aria-describedby="doc-severedRopeGravity">
+          <div class="setting-doc-drawer" id="doc-severedRopeGravity">
+            <div class="doc-meta">
+              <span class="api-badge"><code>severedRopeGravity</code> : number</span>
+              <span class="doc-default">Default: 0.42 · Range: 0.15–0.95</span>
+            </div>
+            <p class="doc-desc">Downward gravitational acceleration applied to joints of severed falling ropes during Verlet integration physics simulation.</p>
+          </div>
         </div>
 
-        <div class="slider-card">
+        <div class="slider-card" data-setting="spillCount">
           <div class="slider-header">
-            <span>Spill Drops Count</span>
+            <div class="slider-title-wrap">
+              <span>Spill Drops Count</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-spillCount" onclick="toggleSettingInfo('spillCount')" title="Click for developer info on spillCount" data-cursor-hover="true">ℹ️</button>
+            </div>
             <span class="slider-val" id="val-spill">16 drops</span>
           </div>
-          <input type="range" id="slider-spill" min="6" max="36" value="16">
+          <input type="range" id="slider-spill" min="6" max="36" value="16" aria-describedby="doc-spillCount">
+          <div class="setting-doc-drawer" id="doc-spillCount">
+            <div class="doc-meta">
+              <span class="api-badge"><code>spillCount</code> : number</span>
+              <span class="doc-default">Default: 16 · Range: 6–36 drops</span>
+            </div>
+            <p class="doc-desc">Number of viscous liquid drops erupted per pointer click or mobile touch tap. Drops arc upward with velocity and cascade downward under gravity.</p>
+          </div>
+        </div>
+
+        <div class="slider-card" data-setting="offsetSize">
+          <div class="slider-header">
+            <div class="slider-title-wrap">
+              <span>Rope Offset Capacity</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-offsetSize" onclick="toggleSettingInfo('offsetSize')" title="Click for developer info on offsetSize" data-cursor-hover="true">ℹ️</button>
+            </div>
+            <span class="slider-val" id="val-offset">6000 px</span>
+          </div>
+          <input type="range" id="slider-offset" min="1000" max="15000" step="500" value="6000" aria-describedby="doc-offsetSize">
+          <div class="setting-doc-drawer" id="doc-offsetSize">
+            <div class="doc-meta">
+              <span class="api-badge"><code>offsetSize</code> : number (px)</span>
+              <span class="doc-default">Default: 6000 · Range: 1000–15000px</span>
+            </div>
+            <p class="doc-desc">Extra pixel offset buffer added to physical rope capacity on top of page/screen dimensions. Allows extensive weaving down tall pages before FIFO limits pop older pins.</p>
+          </div>
+        </div>
+
+        <div class="slider-card" data-setting="pageLengthRatio">
+          <div class="slider-header">
+            <div class="slider-title-wrap">
+              <span>Page Length Scale</span>
+              <button type="button" class="setting-info-btn" id="btnInfo-pageLengthRatio" onclick="toggleSettingInfo('pageLengthRatio')" title="Click for developer info on pageLengthRatio" data-cursor-hover="true">ℹ️</button>
+            </div>
+            <span class="slider-val" id="val-pagelen">1.15x page</span>
+          </div>
+          <input type="range" id="slider-pagelen" min="0.5" max="2.5" step="0.1" value="1.15" aria-describedby="doc-pageLengthRatio">
+          <div class="setting-doc-drawer" id="doc-pageLengthRatio">
+            <div class="doc-meta">
+              <span class="api-badge"><code>pageLengthRatio</code> : number</span>
+              <span class="doc-default">Default: 1.15 · Range: 0.5–2.5x</span>
+            </div>
+            <p class="doc-desc">Multiplier applied to total document scroll height (document.documentElement.scrollHeight). Allows the rope to dynamically stretch across the entire scrollable page height without breaking.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -1638,8 +1919,50 @@
             <tr>
               <td><code>preventTextSelectOnTap</code></td>
               <td>Boolean</td>
-              <td><code>false</code></td>
-              <td>When <code>false</code> (default), native double-tap and triple-tap text/paragraph selection works seamlessly without interference.</td>
+              <td><code>true</code></td>
+              <td>Automatically disables text/word highlighting during rapid multi-taps and anchoring so text doesn't turn blue.</td>
+            </tr>
+            <tr>
+              <td><code>usePageLength</code></td>
+              <td>Boolean</td>
+              <td><code>true</code></td>
+              <td>Dynamically factors the entire scrollable page height (<code>scrollHeight</code>) into maximum rope capacity, allowing continuous stretching down tall pages.</td>
+            </tr>
+            <tr>
+              <td><code>offsetSize</code></td>
+              <td>Number</td>
+              <td><code>6000</code></td>
+              <td>Extra pixel offset capacity added to the rope length to allow continuous weaving across multiple screen journeys.</td>
+            </tr>
+            <tr>
+              <td><code>ropeLengthOffset</code></td>
+              <td>Number</td>
+              <td><code>6000</code></td>
+              <td>Extra pixel offset capacity added on top of screen/page diagonal.</td>
+            </tr>
+            <tr>
+              <td><code>pageLengthRatio</code></td>
+              <td>Number</td>
+              <td><code>1.15</code></td>
+              <td>Multiplier factor applied to scrollable page length when calculating rope limits.</td>
+            </tr>
+            <tr>
+              <td><code>ropeSlack</code></td>
+              <td>Number</td>
+              <td><code>0.42</code></td>
+              <td>Maximum slack fraction when cursor is close to anchor pins (controls catenary sag depth).</td>
+            </tr>
+            <tr>
+              <td><code>ropeMinSlack</code></td>
+              <td>Number</td>
+              <td><code>42</code></td>
+              <td>Minimum baseline droop offset in px so short cord spans still sag organically.</td>
+            </tr>
+            <tr>
+              <td><code>ropeTensionSensitivity</code></td>
+              <td>Number</td>
+              <td><code>1.0</code></td>
+              <td>Developer sensitivity multiplier for rope tightening and loosening (<code>0.2</code> = loose/sluggish, <code>1.0</code> = standard, <code>2.5</code> = hyper-reactive).</td>
             </tr>
             <tr>
               <td><code>severedRopeGravity</code></td>
@@ -1723,8 +2046,41 @@
           <span>Copy Diagnostics</span>
         </button>
       </div>
+  </div>
+
+  <!-- AI Agent Settings & Machine-Readable Spec Modal -->
+  <div class="bug-modal-overlay" id="aiManifestModal" onclick="if(event.target===this)closeAiManifestModal()">
+    <div class="bug-modal ai-manifest-modal" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+      <div class="bug-modal-header">
+        <h3 id="aiModalTitle"><span>🤖</span> AI Agent Settings &amp; Architecture Specification</h3>
+        <button class="bug-modal-close" onclick="closeAiManifestModal()" title="Close dialog" data-cursor-hover="true">&times;</button>
+      </div>
+      <div class="bug-modal-body">
+        <p>Complete machine-readable JSON schema of all <code>Tendril.js</code> settings for LLMs, autonomous coding agents, and developers. Formatted for instant ingestion by Claude, ChatGPT, Cursor, and Antigravity.</p>
+        <div class="ai-json-container" id="aiSettingsJsonDisplay">Loading settings schema...</div>
+        <p style="font-size:0.82rem; margin:0; display:flex; justify-content:space-between; align-items:center;">
+          <span>Raw Endpoints: <a href="llms.txt" target="_blank" style="color:var(--accent); text-decoration:underline;"><code>/llms.txt</code></a> · <a href="ai-settings.json" target="_blank" style="color:var(--accent); text-decoration:underline;"><code>/ai-settings.json</code></a></span>
+        </p>
+      </div>
+      <div class="bug-modal-actions">
+        <button type="button" class="bug-modal-btn primary" id="btnCopyAiJson" onclick="copyAiSettingsJson()" data-cursor-hover="true">
+          <span>📋</span>
+          <span>Copy AI Spec (JSON)</span>
+        </button>
+        <button type="button" class="bug-modal-btn secondary" onclick="window.open('llms.txt', '_blank')" data-cursor-hover="true">
+          <span>📄</span>
+          <span>Open llms.txt</span>
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- Accessible Machine-Readable AI Section in the DOM for Scrapers & Web-Reading LLMs -->
+  <section id="ai-agent-settings-manifest" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;" aria-label="Machine-Readable AI Agent Documentation">
+    <h2>Tendril.js AI Agent Settings Manifest</h2>
+    <p>This section is provided for automated AI agents and web crawlers to read all configuration parameters, types, defaults, and descriptions of Tendril.js directly from the webpage DOM.</p>
+    <script type="application/json" id="tendril-ai-settings-raw"></script>
+  </section>
 
   <footer>
     <p>Tendril.js — Liquid Rope &amp; Ink Cursor Engine · MIT License</p>
@@ -1757,6 +2113,8 @@
     secondaryColor: '#06b6d4',     // Cyan tail gradient
     mixBlendMode: 'difference',    // 'difference' (Mendieta text-reveal lens) | 'normal' | 'screen'
     anchorMode: 'multi',           // 'multi' (multi-pin weaving) | 'single' (1 pin only; follows click) | 'off'
+    usePageLength: true,           // Traverses full page length without breaking
+    offsetSize: 6000,              // Generous extra offset capacity (px)
     spillOnClick: true,            // Liquid drops spill on click or mobile touch
     tripleTapAnchor: true,         // Triple-tap to anchor / sever into falling rope
     multiCheckpoints: true,        // Plant multiple stop pins across the screen
@@ -1788,6 +2146,8 @@ export default function CustomCursor() {
       secondaryColor: '#06b6d4',
       mixBlendMode: 'difference',
       anchorMode: 'multi',         // 'multi' | 'single' | 'off'
+      usePageLength: true,         // Scales rope length to full page height
+      offsetSize: 6000,            // Extra offset capacity
       spillOnClick: true,
       tripleTapAnchor: true,
       multiCheckpoints: true,
@@ -1849,9 +2209,10 @@ onUnmounted(() => {
 - Emerald green (#10b981) liquid physics with Cyan (#06b6d4) secondary gradient.
 - Difference blend mode lens (text inverts and is clearly readable right through the liquid droplet).
 - Natural 1:1 pointer tracking without sticky magnetic drag.
+- Page-Aware Rope Scaling: usePageLength: true ensures the cord dynamically scales with the full scrollable document height (scrollHeight) so anchors can span down the entire page journey without breaking.
+- Increased Offset Size (offsetSize: 6000): Generous extra capacity buffer and expressive catenary sag (ropeSlack: 0.42, ropeMinSlack: 42).
 - Multi Anchor & One Anchor modes: Support for 'multi' (waypoint weaving) and 'single' (1 anchor only; smoothly follows new clicks without breaking), plus 'off'.
-- Real water physics: Cord droops with natural catenary sag when loose, and tightens taut when reaching max length.
-- Smooth page scrolling: Anchors and severed ropes stay naturally locked to document content during page scroll.
+- Smooth page scrolling: Anchors, connecting spans, and severed falling ropes stay naturally locked to document content during page scroll.
 - Mobile / phone touch support: touch/drag draws fluid rope, tapping erupts pressurized liquid spills.
 - Triple-tap text selection preserved (preventTextSelectOnTap: false).
 
@@ -1868,6 +2229,10 @@ const cursor = new Tendril({
   secondaryColor: '#06b6d4',    // Cyan tail gradient
   mixBlendMode: 'difference',   // Text reveal inversion lens
   anchorMode: 'multi',          // 'multi' | 'single' | 'off'
+  usePageLength: true,          // Dynamically scales rope length with full page scroll height
+  offsetSize: 6000,             // Extra offset capacity buffer in px
+  ropeSlack: 0.42,              // Catenary sag depth
+  ropeMinSlack: 42,             // Baseline droop offset
   spillOnClick: true,           // Pressurized liquid spill
   tripleTapAnchor: true,        // Triple-tap waypoint weaving
   multiCheckpoints: true,       // Sequential stop pins in 'multi' mode
@@ -1879,6 +2244,8 @@ const cursor = new Tendril({
 cursor.setAnchorMode('single'); // One Anchor mode: anchor smoothly follows new clicks
 cursor.setAnchorMode('multi');  // Multi Anchor mode: plants multiple pins
 cursor.setAnchorMode('off');    // Turns off anchoring
+cursor.addCheckpoint(x, y);     // Add or move anchor pin
+cursor.releaseAllAndDrop();     // Release all checkpoints into severed falling rope
 cursor.spill(x, y);             // Trigger liquid spills
 
 Please wire this cleanly into my app's lifecycle with proper cleanup (cursor.destroy()).`,
@@ -1899,6 +2266,10 @@ export default function TendrilCursor() {
       secondaryColor: '#06b6d4',
       mixBlendMode: 'difference',
       anchorMode: 'multi',         // 'multi' | 'single' | 'off'
+      usePageLength: true,         // Dynamically calculates rope length using document scrollHeight
+      offsetSize: 6000,            // Extra offset capacity buffer
+      ropeSlack: 0.42,             // Natural catenary sag droop
+      ropeMinSlack: 42,            // Minimum slack offset in px
       spillOnClick: true,
       tripleTapAnchor: true,
       multiCheckpoints: true,
@@ -1928,6 +2299,10 @@ onMounted(() => {
     secondaryColor: '#06b6d4',
     mixBlendMode: 'difference',
     anchorMode: 'multi',           // 'multi' | 'single' | 'off'
+    usePageLength: true,           // Scales rope length to full page height
+    offsetSize: 6000,              // Extra offset capacity buffer
+    ropeSlack: 0.42,               // Catenary sag factor
+    ropeMinSlack: 42,              // Baseline droop offset
     spillOnClick: true,
     tripleTapAnchor: true,
     multiCheckpoints: true,
@@ -1953,6 +2328,12 @@ Insert this snippet into Webflow Project Settings -> Custom Code -> Footer Code 
       window.tendrilInstance.setColor('#10b981', '#06b6d4');
       window.tendrilInstance.setBlendMode('difference');
       window.tendrilInstance.setAnchorMode('multi'); // or 'single'
+      window.tendrilInstance.setOptions({
+        usePageLength: true,
+        offsetSize: 6000,
+        ropeSlack: 0.42,
+        ropeMinSlack: 42
+      });
     }
   });
 <\/script>
@@ -1978,7 +2359,13 @@ Please adapt this for my site structure.`
         tripleTapAnchor: true,
         multiCheckpoints: true,
         anchorMode: 'multi',
+        usePageLength: true,
+        offsetSize: 6000,
+        ropeLengthOffset: 6000,
+        ropeSlack: 0.42,
+        ropeMinSlack: 42,
         preventTextSelectOnTap: false,
+        ropeTensionSensitivity: 1.0,
         severedRopeGravity: 0.42
       });
 
@@ -2325,6 +2712,21 @@ Please adapt this for my site structure.`
         vSpill.textContent = e.target.value + ' drops';
         cursor.setOptions({ spillCount: parseInt(e.target.value, 10) });
       });
+
+      const sOffset = document.getElementById('slider-offset');
+      const vOffset = document.getElementById('val-offset');
+      if (sOffset) sOffset.addEventListener('input', (e) => {
+        vOffset.textContent = e.target.value + ' px';
+        cursor.setOptions({ offsetSize: parseFloat(e.target.value), ropeLengthOffset: parseFloat(e.target.value) });
+      });
+
+      const sPageLen = document.getElementById('slider-pagelen');
+      const vPageLen = document.getElementById('val-pagelen');
+      if (sPageLen) sPageLen.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        vPageLen.textContent = val.toFixed(2) + 'x page';
+        cursor.setOptions({ usePageLength: true, pageLengthRatio: val });
+      });
     }
 
     function toggleTheme(forceDark) {
@@ -2372,6 +2774,191 @@ Please adapt this for my site structure.`
           toggleTheme();
         });
       }
+    }
+
+    /* --- DEVELOPER SETTINGS INFO & AI AGENT KNOWLEDGE SYSTEM --- */
+    const AI_SETTINGS_SCHEMA = {
+      name: "Tendril.js",
+      version: "1.0.0",
+      description: "Liquid Rope & Ink Physics Engine. Frame-rate independent Verlet kinematics synthesized with SVG gooey fluid dynamics.",
+      repository: "https://github.com/NISHANTTMAURYA/saloni-portfolio",
+      documentationUrl: "https://nishanttmaurya.github.io/saloni-portfolio/hybrid-cursor-showcase.html",
+      aiDocsUrl: "https://nishanttmaurya.github.io/saloni-portfolio/llms.txt",
+      settings: [
+        {
+          name: "Rope Tension (Lag)",
+          param: "segTau",
+          type: "number",
+          unit: "ms",
+          default: 36,
+          min: 15,
+          max: 80,
+          description: "Frame-rate independent exponential smoothing lag time constant per segment. Lower (15ms) = rigid, snappy follow; Higher (80ms) = loose floating trailing cord."
+        },
+        {
+          name: "Tension Sensitivity",
+          param: "ropeTensionSensitivity",
+          type: "number",
+          unit: "multiplier",
+          default: 1.0,
+          min: 0.2,
+          max: 2.5,
+          description: "Multiplier for dynamic tension build-up when cursor stretches away from anchor pins. 2.5x snaps spans taut rapidly; 0.2x keeps the cord relaxed and loose."
+        },
+        {
+          name: "Slack / Water Sag",
+          param: "ropeSlack",
+          type: "number",
+          unit: "fraction",
+          default: 0.42,
+          min: 0.10,
+          max: 0.70,
+          description: "Maximum slack fraction when cursor is close to anchor pins. Governs catenary sag depth and gravitational water drooping."
+        },
+        {
+          name: "Tendon Thickness",
+          param: "strokeWidth",
+          type: "number",
+          unit: "px",
+          default: 9,
+          min: 4,
+          max: 18,
+          description: "Base physical SVG stroke width of the central tendon spine. Features Poisson necking (thins down organically as cord stretches over long spans)."
+        },
+        {
+          name: "Gooey Viscosity (Blur)",
+          param: "gooeyBlur",
+          type: "number",
+          unit: "px",
+          default: 7,
+          min: 2,
+          max: 14,
+          description: "SVG feGaussianBlur radius in the #goo filter. Merged with high alpha contrast (gooeyContrast: 34) to fuse vertebrae into organic liquid rubber surface tension."
+        },
+        {
+          name: "Severed Rope Gravity",
+          param: "severedRopeGravity",
+          type: "number",
+          unit: "px/frame^2",
+          default: 0.42,
+          min: 0.15,
+          max: 0.95,
+          description: "Downward gravitational acceleration applied to joints of severed falling ropes during Verlet integration physics simulation."
+        },
+        {
+          name: "Spill Drops Count",
+          param: "spillCount",
+          type: "number",
+          unit: "drops",
+          default: 16,
+          min: 6,
+          max: 36,
+          description: "Number of viscous liquid drops erupted per pointer click or mobile touch tap. Drops arc upward with velocity and cascade downward under gravity."
+        },
+        {
+          name: "Rope Offset Capacity",
+          param: "offsetSize",
+          altParam: "ropeLengthOffset",
+          type: "number",
+          unit: "px",
+          default: 6000,
+          min: 1000,
+          max: 15000,
+          description: "Extra pixel offset buffer added to physical rope capacity on top of page/screen dimensions. Allows extensive weaving down tall pages before FIFO limits pop older pins."
+        },
+        {
+          name: "Page Length Scale",
+          param: "pageLengthRatio",
+          type: "number",
+          unit: "multiplier",
+          default: 1.15,
+          min: 0.5,
+          max: 2.5,
+          description: "Multiplier applied to total document scroll height (document.documentElement.scrollHeight). Allows the rope to dynamically stretch across the entire scrollable page height without breaking."
+        },
+        {
+          name: "Use Page Length",
+          param: "usePageLength",
+          type: "boolean",
+          default: true,
+          description: "When true, calculates max rope capacity using the full document scroll height rather than viewport diagonal alone."
+        },
+        {
+          name: "Anchor Mode",
+          param: "anchorMode",
+          type: "string",
+          default: "multi",
+          options: ["multi", "single", "off"],
+          description: "'multi' for sequential waypoint weaving, 'single' for 1 anchor pin that glides with damped spring follow, 'off' to disable."
+        },
+        {
+          name: "CSS Blend Mode",
+          param: "mixBlendMode",
+          type: "string",
+          default: "difference",
+          options: ["difference", "normal", "screen"],
+          description: "'difference' (Mendieta text-reveal lens), 'normal' (opaque ink), 'screen' (additive dark-mode cyber glow)."
+        }
+      ]
+    };
+
+    // Expose globally for browser AI agents & DevTools
+    window.__TENDRIL_AI_SETTINGS__ = AI_SETTINGS_SCHEMA;
+
+    // Populate accessible DOM block for AI crawlers
+    try {
+      const rawBlock = document.getElementById('tendril-ai-settings-raw');
+      if (rawBlock) {
+        rawBlock.textContent = JSON.stringify(AI_SETTINGS_SCHEMA);
+      }
+    } catch (_) {}
+
+    function toggleSettingInfo(id) {
+      const drawer = document.getElementById('doc-' + id);
+      const btn = document.getElementById('btnInfo-' + id);
+      if (drawer) {
+        const isOpen = drawer.classList.toggle('open');
+        if (btn) btn.classList.toggle('active', isOpen);
+      }
+    }
+
+    let allInfoOpen = false;
+    function toggleAllSettingsInfo() {
+      allInfoOpen = !allInfoOpen;
+      document.querySelectorAll('.setting-doc-drawer').forEach(d => {
+        d.classList.toggle('open', allInfoOpen);
+      });
+      document.querySelectorAll('.setting-info-btn').forEach(b => {
+        b.classList.toggle('active', allInfoOpen);
+      });
+      const txt = document.getElementById('btnToggleAllInfoText');
+      if (txt) txt.textContent = allInfoOpen ? 'Hide Developer Info' : 'Developer Info';
+    }
+
+    function openAiManifestModal() {
+      const modal = document.getElementById('aiManifestModal');
+      const box = document.getElementById('aiSettingsJsonDisplay');
+      if (box) {
+        box.textContent = JSON.stringify(AI_SETTINGS_SCHEMA, null, 2);
+      }
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeAiManifestModal() {
+      const modal = document.getElementById('aiManifestModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function copyAiSettingsJson() {
+      const json = JSON.stringify(AI_SETTINGS_SCHEMA, null, 2);
+      navigator.clipboard.writeText(json).then(() => {
+        const btn = document.getElementById('btnCopyAiJson');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<span>✅</span><span>Copied for AI Agent!</span>';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }
+      });
     }
   </script>
 </body>
