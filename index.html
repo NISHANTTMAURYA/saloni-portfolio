@@ -915,12 +915,38 @@
           mouse = [x, y];
           prevMouse = [x, y];
           isMoving = true;
+
+          // Seamlessly suppress Tendril's liquid rope and drips over the photo
+          // while keeping the pointer circle and native cursor tracking untouched
+          const tendril = window.__tendril_auto_instance;
+          if (tendril) {
+            if (tendril.rope) tendril.rope.style.display = 'none';
+            if (tendril.liquidGroup) tendril.liquidGroup.style.display = 'none';
+            if (tendril.nodeGroup) {
+              // Hide trailing tail nodes, keep head cursor bead (index 0)
+              for (let i = 1; i < tendril.nodes.length; i++) {
+                if (tendril.nodes[i]) tendril.nodes[i].style.display = 'none';
+              }
+            }
+          }
         };
 
         const handlePointerLeave = () => {
           isHovered = false;
           isMoving = false;
           lastUserTime = performance.now();
+
+          // Restore Tendril's fluid rope when leaving the photo
+          const tendril = window.__tendril_auto_instance;
+          if (tendril) {
+            if (tendril.rope) tendril.rope.style.display = '';
+            if (tendril.liquidGroup) tendril.liquidGroup.style.display = '';
+            if (tendril.nodeGroup) {
+              for (let i = 1; i < tendril.nodes.length; i++) {
+                if (tendril.nodes[i]) tendril.nodes[i].style.display = '';
+              }
+            }
+          }
         };
 
         const handlePointerMove = (e) => {
@@ -1052,6 +1078,18 @@
           container.removeEventListener('pointerleave', handlePointerLeave);
           container.removeEventListener('pointermove', handlePointerMove);
           container.removeEventListener('pointerdown', handleClick);
+
+          // Restore Tendril on unmount
+          const tendril = window.__tendril_auto_instance;
+          if (tendril) {
+            if (tendril.rope) tendril.rope.style.display = '';
+            if (tendril.liquidGroup) tendril.liquidGroup.style.display = '';
+            if (tendril.nodeGroup) {
+              for (let i = 1; i < tendril.nodes.length; i++) {
+                if (tendril.nodes[i]) tendril.nodes[i].style.display = '';
+              }
+            }
+          }
 
           // Cleanup WebGL resources
           gl.deleteBuffer(quadBuf);
