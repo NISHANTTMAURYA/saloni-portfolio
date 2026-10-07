@@ -42,7 +42,7 @@
   <script src="tendril.js"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function () {
-      new Tendril({
+      window.__tendril_auto_instance = new Tendril({
         mixBlendMode: 'normal',
         color: '#E11D48',            // Deep warm bakery rose pink
         secondaryColor: '#E11D48',   // Uniform rose pink matching main body
@@ -282,6 +282,15 @@
     }
     .steam {
       animation: steamRise 2.4s ease-out infinite;
+    }
+
+    /* Instantly and unconditionally hide Tendril cursor wrap whenever hovering over Saloni's photo */
+    body:has(#hero-avatar-reveal:hover) div[id$="_wrap"],
+    body:has(#hero-avatar-reveal:hover) [id*="tendril"],
+    body.hero-photo-hovered div[id$="_wrap"] {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
     }
 
     /* ---------- Idle life: sleepy cat zZ ---------- */
@@ -927,7 +936,8 @@
           prevMouse = [x, y];
           isMoving = true;
 
-          // Completely hide Tendril cursor and its difference filter while hovering over the hero photo
+          // Unconditionally hide Tendril cursor wrap while hovering over Saloni's photo
+          document.body.classList.add('hero-photo-hovered');
           const tendril = window.__tendril_auto_instance;
           if (tendril && tendril.wrap) {
             tendril.wrap.style.opacity = '0';
@@ -941,6 +951,7 @@
           lastUserTime = performance.now();
 
           // Restore Tendril cursor as soon as pointer leaves the photo
+          document.body.classList.remove('hero-photo-hovered');
           const tendril = window.__tendril_auto_instance;
           if (tendril && tendril.wrap) {
             tendril.wrap.style.opacity = '1';
@@ -1103,6 +1114,7 @@
 
       return (
         <div
+          id="hero-avatar-reveal"
           ref={containerRef}
           className="relative w-full select-none cursor-pointer group"
           style={{ aspectRatio: '1420 / 1108' }}
