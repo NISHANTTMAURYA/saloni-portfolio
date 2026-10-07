@@ -3,10 +3,14 @@
 > **A production-ready, zero-dependency physics-based cursor engine synthesizing Ricardo Mendieta's Gooey Ink Dynamics and Difference Lens with Motion Bench's Frame-Rate Independent Verlet Kinematics.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Netlify Status](https://img.shields.io/badge/Netlify-Live%20Demo-00C7B7.svg?logo=netlify&logoColor=white)](https://tendril-cursor.netlify.app)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6.svg)](#)
 [![Performance](https://img.shields.io/badge/GC%20Allocation-0%20bytes%20per%20click-purple.svg)](#)
 [![Default Palette](https://img.shields.io/badge/Default-Emerald%20Green-10b981.svg)](#)
+
+🎮 **Live Playground**: [https://tendril-cursor.netlify.app](https://tendril-cursor.netlify.app)  
+📦 **GitHub Repo**: [https://github.com/NISHANTTMAURYA/tendril-cursor](https://github.com/NISHANTTMAURYA/tendril-cursor)
 
 ---
 
@@ -144,6 +148,9 @@ onUnmounted(() => {
 | `ropeSlack` | `number` | `0.42` | Maximum slack fraction when cursor is close to anchor pins (controls catenary sag depth). |
 | `ropeMinSlack` | `number` | `42` | Minimum base droop offset in px so even short cord spans sag organically. |
 | `ropeTensionSensitivity` | `number` | `1.0` | Sensitivity multiplier for rope tightening and loosening (`0.2` = loose/sluggish, `1.0` = standard, `2.5` = hyper-reactive). |
+| `defaultAnchor` | `'off' \| 'multi' \| 'single'` | `'off'` | **New:** Default startup mode. `'off'` (free floating cursor until tapped), `'multi'` (starts immediately anchored in multi-checkpoint weaving), or `'single'` (starts anchored with 1 gliding pin). |
+| `defaultAnchorPos` | `{ x, y } \| null` | `null` | **New:** Optional fixed startup coordinates for the default anchor. If `null`, anchors at the cursor entry position. |
+| `disableOnTouch` | `boolean` | `true` | **New:** Automatically suppresses cursor engine on touchscreens/mobile devices for native touch behavior. |
 | `anchorMode` | `string` | `'multi'` | Anchor mode: `'multi'` (sequential waypoint weaving), `'single'` (1 pin glides on damped spring), or `'off'`. |
 | `tripleTapAnchor` | `boolean` | `true` | Triple-tap to anchor tail and sever falling ropes. |
 | `multiCheckpoints`| `boolean` | `true` | Allows planting multiple sequential stop checkpoints across the screen in `'multi'` mode. |
