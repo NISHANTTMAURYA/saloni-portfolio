@@ -581,10 +581,15 @@
   Tendril.prototype._touchDown = function (e) {
     if (!e.touches || !e.touches[0]) return;
     var t = e.touches[0];
-    this._move({ clientX: t.clientX, clientY: t.clientY });
-    if (this.opts.splashOnClick) this._splash(t.clientX, t.clientY);
-    if (this.opts.spillOnClick) this.spill(t.clientX, t.clientY);
-    this._wake();
+    // Route touch down through the full anchor, spill, and physics pipeline
+    this._down({
+      clientX: t.clientX,
+      clientY: t.clientY,
+      target: e.target,
+      detail: 1,
+      cancelable: e.cancelable,
+      preventDefault: function() { if (e.cancelable && e.preventDefault) e.preventDefault(); }
+    });
   };
 
   Tendril.prototype._touchMove = function (e) {

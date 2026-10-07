@@ -497,6 +497,93 @@
       color: #fff;
       box-shadow: 0 2px 10px var(--accent-glow);
     }
+    .lens-pill .pill-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin-left: 6px;
+      background: rgba(0, 0, 0, 0.08);
+      color: inherit;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      vertical-align: middle;
+      transition: background 0.2s;
+    }
+    body.dark-mode .lens-pill .pill-tag {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .lens-pill.active .pill-tag {
+      background: rgba(0, 0, 0, 0.22);
+      color: #fff;
+    }
+
+    .lens-notice-box {
+      margin-bottom: 22px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: fadeInNotice 0.25s ease-out;
+    }
+    body.dark-mode .lens-notice-box {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    .lens-notice-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1;
+      min-width: 260px;
+    }
+    .lens-notice-content .notice-icon {
+      font-size: 1.35rem;
+      line-height: 1.2;
+    }
+    .lens-notice-content strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.92rem;
+      margin-bottom: 2px;
+    }
+    .lens-notice-content p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .switch-dark-btn {
+      border: none;
+      background: #18181b;
+      color: #fafafa;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .switch-dark-btn:hover {
+      transform: translateY(-1px);
+      background: #27272a;
+    }
+    @keyframes fadeInNotice {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     .lens-sandbox {
       background: var(--bg-card-subtle);
@@ -1103,6 +1190,12 @@
           <p id="guideDesc">Triple-click anywhere to pin the tail at that spot. Stretch the cord across the page, then triple-click again to sever the cord into an independent falling rope!</p>
         </div>
         <div class="banner-actions">
+          <!-- Anchor Mode Selector Pills -->
+          <div class="lens-mode-pills" id="anchorModeSelector">
+            <button type="button" class="lens-pill active" id="modePillMulti" onclick="selectAnchorMode('multi')" data-cursor-hover="true">📍 Multi Anchor</button>
+            <button type="button" class="lens-pill" id="modePillSingle" onclick="selectAnchorMode('single')" data-cursor-hover="true">🎯 One Anchor (Follows)</button>
+            <button type="button" class="lens-pill" id="modePillOff" onclick="selectAnchorMode('off')" data-cursor-hover="true">🚫 Off</button>
+          </div>
           <button class="btn-pill" id="bannerAnchorBtn" onclick="triggerAnchorToggle()" data-cursor-hover="true">⚓ Drop Anchor Here</button>
           <button class="btn-pill" id="bannerSeverBtn" onclick="triggerSeverRope()" data-cursor-hover="true" style="display:none;">✂️ Sever &amp; Drop Rope</button>
         </div>
@@ -1138,8 +1231,21 @@
         <div class="lens-mode-pills">
           <button class="lens-pill active" id="pillDiff" onclick="applyBlendMode('difference')" data-cursor-hover="true">🔍 Text Reveal (Difference)</button>
           <button class="lens-pill" id="pillNormal" onclick="applyBlendMode('normal')" data-cursor-hover="true">🩸 Solid Liquid (Normal)</button>
-          <button class="lens-pill" id="pillScreen" onclick="applyBlendMode('screen')" data-cursor-hover="true">✨ Luminous Glow (Screen)</button>
+          <button class="lens-pill" id="pillScreen" onclick="applyBlendMode('screen')" data-cursor-hover="true">✨ Luminous Glow (Screen) <span class="pill-tag">🌙 Best in Dark Mode</span></button>
         </div>
+      </div>
+
+      <div id="screenNotice" class="lens-notice-box" style="display: none;">
+        <div class="lens-notice-content">
+          <span class="notice-icon">🌙</span>
+          <div>
+            <strong>Dark Mode Recommended for Screen Blend Mode</strong>
+            <p>Luminous Glow uses additive lighting (<code>mix-blend-mode: screen</code>). It creates an intense electric cyber glow against dark surfaces, but mathematically dissolves into white against light backgrounds.</p>
+          </div>
+        </div>
+        <button type="button" class="switch-dark-btn" onclick="toggleTheme(true)" data-cursor-hover="true">
+          <span>Switch to Dark Mode 🌙</span>
+        </button>
       </div>
 
       <div class="lens-sandbox">
@@ -1147,7 +1253,7 @@
           MOVE YOUR CURSOR ACROSS THIS TYPOGRAPHY
         </h3>
         <p class="sandbox-paragraph">
-          Notice how the letters invert and remain vividly readable right through the liquid ink! In <strong>Difference mode</strong>, the droplet layer calculates <code>abs(pixel - cursorColor)</code>. Against dark text, it produces high-contrast luminous highlights, creating an optical magnifying lens that never obscures underlying content.
+          Notice how the letters invert and remain vividly readable right through the liquid ink! In <strong>Difference mode</strong>, the droplet layer calculates <code>abs(pixel - cursorColor)</code> for high-contrast typography reveal. In <strong>Normal mode</strong>, it renders as solid viscous ink. In <strong>Screen mode</strong>, additive lighting produces an electric luminous glow — <em>best viewed in Dark Mode</em> because additive blending dissolves against light/white surfaces.
         </p>
 
         <div class="sandbox-quote-card">
@@ -1165,8 +1271,8 @@
     <!-- Four Core Interactive Modes -->
     <section>
       <div class="section-title">
-        <h2>Four Core Interactive Modes</h2>
-        <p>Click or trigger each mode directly to experience its unique physics simulation</p>
+        <h2>Interactive Physics Modes</h2>
+        <p>Click any card below to test each mode live on screen</p>
       </div>
 
       <div class="modes-grid">
@@ -1174,36 +1280,36 @@
           <div>
             <div class="mode-icon">🧵</div>
             <h3>Free Rope Kinematics</h3>
-            <p>22 kinematic joints trailing your cursor with frame-rate independent exponential smoothing. Identical tension across 60Hz, 120Hz, and 144Hz displays.</p>
+            <p>Free-flowing liquid rope trailing pointer/touch with frame-rate independent exponential smoothing.</p>
           </div>
-          <div class="mode-trigger">Move Rapidly &rarr;</div>
+          <div class="mode-trigger">Test Free Mode &rarr;</div>
         </div>
 
         <div class="mode-card" data-cursor-hover="true" onclick="testMode(2)">
           <div>
             <div class="mode-icon">📍</div>
-            <h3>Multi-Checkpoint Weaving</h3>
-            <p>Plant multiple stop pins across the page. The liquid tendon threads dynamically through each checkpoint with organic gravitational catenary sag.</p>
+            <h3>Multi-Anchor Weaving</h3>
+            <p>Plant multiple stop pins across the screen. Water-like droop when loose, tightens when stretched.</p>
           </div>
-          <div class="mode-trigger">Click to Plant Pin &rarr;</div>
+          <div class="mode-trigger">Test Multi Anchor &rarr;</div>
         </div>
 
-        <div class="mode-card" data-cursor-hover="true" onclick="testMode(3)">
+        <div class="mode-card" data-cursor-hover="true" onclick="testMode(5)">
           <div>
-            <div class="mode-icon">✂️</div>
-            <h3>Severed Cascade Physics</h3>
-            <p>Sever the threaded rope from all pins simultaneously. The detached cord tumbles down the screen under real Verlet integration gravity and distance constraints!</p>
+            <div class="mode-icon">🎯</div>
+            <h3>One Anchor (Follows)</h3>
+            <p>Only 1 pin allowed. When you click anywhere new, the anchor smoothly follows without breaking!</p>
           </div>
-          <div class="mode-trigger">Click to Sever All &rarr;</div>
+          <div class="mode-trigger">Test One Anchor &rarr;</div>
         </div>
 
         <div class="mode-card" data-cursor-hover="true" onclick="testMode(4)">
           <div>
             <div class="mode-icon">💧</div>
             <h3>Gravitational Spills</h3>
-            <p>Pointer clicks erupt heavy liquid drops upward that cascade down with gravity, stretching into aerodynamic teardrops and shedding dripping trails.</p>
+            <p>Pointer taps erupt heavy liquid drops upward that cascade down with real gravity and shedding trails.</p>
           </div>
-          <div class="mode-trigger">Click to Spill &rarr;</div>
+          <div class="mode-trigger">Click to Spill Drops &rarr;</div>
         </div>
       </div>
     </section>
@@ -1366,7 +1472,7 @@
               <td><code>mixBlendMode</code></td>
               <td>String</td>
               <td><code>'difference'</code></td>
-              <td>Blend mode: <code>'difference'</code> (Mendieta text-reveal lens), <code>'normal'</code>, <code>'screen'</code>.</td>
+              <td>Blend mode: <code>'difference'</code> (Mendieta text-reveal lens), <code>'normal'</code> (solid ink), <code>'screen'</code> (additive luminous glow — <strong>best used in Dark Mode</strong>).</td>
             </tr>
             <tr>
               <td><code>multiCheckpoints</code></td>
@@ -1420,7 +1526,7 @@
               <td><code>setBlendMode(mode)</code></td>
               <td>Method</td>
               <td>—</td>
-              <td>Dynamically changes cursor blend mode (<code>'difference'</code> | <code>'normal'</code> | <code>'screen'</code>).</td>
+              <td>Dynamically changes cursor blend mode (<code>'difference'</code> | <code>'normal'</code> | <code>'screen'</code> — <em>use screen in dark mode for optimal glow</em>).</td>
             </tr>
             <tr>
               <td><code>reportBug(note)</code></td>
@@ -1657,7 +1763,7 @@ Please adapt this for my site structure.`
         color: '#10b981',
         secondaryColor: '#06b6d4',
         mixBlendMode: 'difference',
-        segments: 22,
+        segments: 26,
         segTau: 36,
         gooeyBlur: 7,
         strokeWidth: 9,
@@ -1673,6 +1779,10 @@ Please adapt this for my site structure.`
 
       cursor.onAnchorChange = function(isAnchored, data) {
         updateAnchorUI(isAnchored, data);
+      };
+
+      cursor.onAnchorModeChange = function(mode) {
+        updateAnchorModePills(mode);
       };
 
       setupColorStudio();
@@ -1725,8 +1835,10 @@ Please adapt this for my site structure.`
     function testMode(num) {
       if (!cursor) return;
       if (num === 1) {
+        selectAnchorMode('off');
         cursor.clearCheckpoints();
       } else if (num === 2) {
+        selectAnchorMode('multi');
         cursor.addCheckpoint();
       } else if (num === 3) {
         if (!cursor.isAnchored) {
@@ -1738,6 +1850,42 @@ Please adapt this for my site structure.`
         }, 150);
       } else if (num === 4) {
         cursor.spill({ count: 24, speed: 6.5 });
+      } else if (num === 5) {
+        selectAnchorMode('single');
+        if (!cursor.isAnchored) {
+          cursor.addCheckpoint();
+        } else {
+          // If already anchored, move it to test following behavior
+          cursor.addCheckpoint(cursor.target.x, cursor.target.y);
+        }
+      }
+    }
+
+    function selectAnchorMode(mode) {
+      if (!cursor) return;
+      cursor.setAnchorMode(mode);
+      updateAnchorModePills(mode);
+    }
+
+    function updateAnchorModePills(mode) {
+      const pMulti = document.getElementById('modePillMulti');
+      const pSingle = document.getElementById('modePillSingle');
+      const pOff = document.getElementById('modePillOff');
+      if (pMulti) pMulti.classList.toggle('active', mode === 'multi');
+      if (pSingle) pSingle.classList.toggle('active', mode === 'single');
+      if (pOff) pOff.classList.toggle('active', mode === 'off');
+
+      const bannerTitle = document.getElementById('guideTitle');
+      const bannerDesc = document.getElementById('guideDesc');
+      if (mode === 'single') {
+        if (bannerTitle) bannerTitle.textContent = '🎯 One Anchor Mode (Active):';
+        if (bannerDesc) bannerDesc.textContent = 'Only 1 anchor exists. Triple-tap to anchor; click anywhere else and the anchor smoothly follows to the new spot without breaking!';
+      } else if (mode === 'multi') {
+        if (bannerTitle) bannerTitle.textContent = '📍 Multi-Anchor Weaving Mode (Active):';
+        if (bannerDesc) bannerDesc.textContent = 'Weave multiple anchor points across the page. Click anywhere to drop extra pins; rope tightens or loosens based on total length!';
+      } else if (mode === 'off') {
+        if (bannerTitle) bannerTitle.textContent = '🚫 Anchor Modes Disabled:';
+        if (bannerDesc) bannerDesc.textContent = 'Anchoring is turned off. You get pure free-flowing liquid rope kinematics with spills on tap/click.';
       }
     }
 
@@ -1763,6 +1911,8 @@ Please adapt this for my site structure.`
       if (mode === 'difference') document.getElementById('pillDiff').classList.add('active');
       if (mode === 'normal') document.getElementById('pillNormal').classList.add('active');
       if (mode === 'screen') document.getElementById('pillScreen').classList.add('active');
+
+      checkScreenNotice();
     }
 
     function triggerBugReport() {
@@ -1879,13 +2029,21 @@ Please adapt this for my site structure.`
       });
     }
 
-    function setupThemeToggle() {
-      const btn = document.getElementById('themeToggleBtn');
+    function toggleTheme(forceDark) {
+      if (typeof forceDark === 'boolean') {
+        if (forceDark) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      } else {
+        document.body.classList.toggle('dark-mode');
+      }
+
+      const isDark = document.body.classList.contains('dark-mode');
       const icon = document.getElementById('themeIcon');
       const label = document.getElementById('themeLabel');
-
-      btn.addEventListener('click', () => {
-        const isDark = document.body.classList.toggle('dark-mode');
+      if (icon && label) {
         if (isDark) {
           icon.textContent = '☀️';
           label.textContent = 'Light';
@@ -1893,7 +2051,29 @@ Please adapt this for my site structure.`
           icon.textContent = '🌙';
           label.textContent = 'Dark';
         }
-      });
+      }
+      checkScreenNotice();
+    }
+
+    function checkScreenNotice() {
+      const notice = document.getElementById('screenNotice');
+      if (!notice) return;
+      const isScreenActive = document.getElementById('pillScreen') && document.getElementById('pillScreen').classList.contains('active');
+      const isLightMode = !document.body.classList.contains('dark-mode');
+      if (isScreenActive && isLightMode) {
+        notice.style.display = 'flex';
+      } else {
+        notice.style.display = 'none';
+      }
+    }
+
+    function setupThemeToggle() {
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          toggleTheme();
+        });
+      }
     }
   </script>
 </body>
