@@ -680,343 +680,141 @@
       return null;
     }
 
-    /* --- INTERACTIVE WAVY LIQUID REVEAL HERO IMAGE --- */
+    /* --- ULTRA-SMOOTH CURSOR SPOTLIGHT REVEAL HERO IMAGE ---
+       Award-winning smooth spotlight reveal technique:
+       - Preserves 100% crisp, undistorted, gorgeous photo clarity on both images
+       - Uses lerped 60fps physics for butter-smooth cursor tracking without jitter
+       - Radial gradient mask reveals the real photo underneath around cursor radius
+       - Soft feathered perimeter + subtle glowing aura ring around the spotlight radius
+    */
     function WavyHeroImage({
       frontSrc = 'avatar.png',
       backSrc = 'saloni-real.png',
-      alt = 'Saloni Bhosale - Illustrated & Real Photo'
+      alt = 'Saloni Bhosale - Illustrated & Real Photo',
+      spotlightRadius = 145, // Base reveal radius in pixels
+      offsetRealX = 0.020,
+      offsetRealY = 0.016
     }) {
       const containerRef = useRef(null);
-      const canvasRef = useRef(null);
-      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      const initialProg = urlParams && urlParams.has('prog') ? parseFloat(urlParams.get('prog')) : (urlParams && urlParams.has('reveal') ? 1 : 0);
-      const initialReveal = initialProg > 0.5;
-      const [isHovered, setIsHovered] = useState(initialReveal);
-      const [webGlSupported, setWebGlSupported] = useState(true);
-      const [fallbackProgress, setFallbackProgress] = useState(initialProg);
+      const ringRef = useRef(null);
+      const backImageRef = useRef(null);
+      
+      const [isHovered, setIsHovered] = useState(false);
 
-      // Mutable state for 60fps WebGL render loop
-      const stateRef = useRef({
-        hovered: initialReveal,
-        progress: initialProg,
-        targetProgress: initialProg,
-        mouse: [0.5, 0.5],
-        targetMouse: [0.5, 0.5],
-        hoverInfluence: initialReveal ? 1 : 0,
-        targetHoverInfluence: initialReveal ? 1 : 0,
+      // Smooth Lerp Physics state
+      const animState = useRef({
+        targetX: 50,
+        targetY: 42,
+        currentX: 50,
+        currentY: 42,
+        targetRadius: 0,
+        currentRadius: 0,
+        targetOpacity: 0,
+        currentOpacity: 0,
         rafId: null,
-        gl: null,
-        program: null,
-        textures: [],
-        buffer: null,
-        isDestroyed: false
+        isHovered: false
       });
 
       useEffect(() => {
-        const container = containerRef.current;
-        const canvas = canvasRef.current;
-        if (!container || !canvas) return;
+        const state = animState.current;
 
-        const state = stateRef.current;
-        state.isDestroyed = false;
+        // 60fps Smooth Lerp Render Loop
+        const lerp = (start, end, factor) => start + (end - start) * factor;
 
-        const vsSource = `
-          attribute vec2 aPosition;
-          varying vec2 vUv;
-          void main() {
-            vUv = (aPosition + 1.0) * 0.5;
-            vUv.y = 1.0 - vUv.y;
-            gl_Position = vec4(aPosition, 0.0, 1.0);
-          }
-        `;
+        const updateAnimation = () => {
+          // Lerp coordinates (0.12 factor provides silky, organic momentum)
+          state.currentX = lerp(state.currentX, state.targetX, 0.12);
+          state.currentY = lerp(state.currentY, state.targetY, 0.12);
+          state.currentRadius = lerp(state.currentRadius, state.targetRadius, 0.14);
+          state.currentOpacity = lerp(state.currentOpacity, state.targetOpacity, 0.14);
 
-        const fsSource = `
-          precision highp float;
-          varying vec2 vUv;
+          const curX = state.currentX.toFixed(2);
+          const curY = state.currentY.toFixed(2);
+          const curRad = Math.max(0, state.currentRadius);
+          const curOp = state.currentOpacity;
 
-          uniform sampler2D uTex1;
-          uniform sampler2D uTex2;
-          uniform float uProgress;
-          uniform float uTime;
-          uniform vec2 uMouse;
-          uniform float uHover;
+          // Apply radial gradient mask to reveal real photo underneath
+          if (backImageRef.current) {
+            // Feathered soft circular spotlight
+            const innerRadius = Math.max(0, curRad * 0.72).toFixed(1);
+            const outerRadius = curRad.toFixed(1);
 
-          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+            const maskValue = `radial-gradient(circle ${outerRadius}px at ${curX}% ${curY}%, black 0px, black ${innerRadius}px, transparent ${outerRadius}px)`;
 
-          float snoise(vec2 v) {
-            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-            vec2 i  = floor(v + dot(v, C.yy) );
-            vec2 x0 = v - i + dot(i, C.xx);
-            vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-            vec4 x12 = x0.xyxy + C.xxzz;
-            x12.xy -= i1;
-            i = mod289(i);
-            vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-            m = m*m;
-            m = m*m;
-            vec3 x = 2.0 * fract(p * C.www) - 1.0;
-            vec3 h = abs(x) - 0.5;
-            vec3 ox = floor(x + 0.5);
-            vec3 a0 = x - ox;
-            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-            vec3 g;
-            g.x  = a0.x  * x0.x  + h.x  * x0.y;
-            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-            return 130.0 * dot(m, g);
+            backImageRef.current.style.webkitMaskImage = maskValue;
+            backImageRef.current.style.maskImage = maskValue;
+            backImageRef.current.style.opacity = curOp > 0.005 ? '1' : '0';
           }
 
-          void main() {
-            vec2 uv = vUv;
-            float p = uProgress;
-
-            // Transition wave displacement peaks mid-transition
-            float peak = sin(p * 3.14159265);
-            float waveStrength = peak * 0.92 + uHover * 0.12;
-
-            // Fluid sinusoidal + perlin waves
-            float n1 = snoise(uv * 4.2 + vec2(uTime * 0.32, uTime * 0.22));
-            float n2 = snoise(uv * 7.8 - vec2(uTime * 0.38, uTime * 0.28));
-
-            float waveX = sin(uv.y * 18.0 + uTime * 3.4 + n1 * 2.2) * 0.038;
-            float waveY = cos(uv.x * 16.0 - uTime * 2.9 + n2 * 2.2) * 0.038;
-            vec2 liquidWave = vec2(waveX, waveY);
-
-            // Dynamic mouse ripple wake
-            float dMouse = distance(uv, uMouse);
-            float mouseRipple = sin(dMouse * 32.0 - uTime * 7.5) * exp(-dMouse * 4.2);
-            vec2 mouseDisp = normalize(uv - uMouse + vec2(0.0001)) * mouseRipple * 0.035 * uHover;
-
-            vec2 totalDisp = liquidWave * waveStrength + mouseDisp;
-
-            // Displace texture UVs oppositely for fluid liquid morph
-            vec2 uv1 = uv + totalDisp * p;
-            vec2 uv2 = uv - totalDisp * (1.0 - p);
-
-            // Alpha-safe boundaries for crisp transparent cutout edges
-            vec4 c1 = (uv1.x < 0.0 || uv1.x > 1.0 || uv1.y < 0.0 || uv1.y > 1.0) ? vec4(0.0) : texture2D(uTex1, uv1);
-            vec4 c2 = (uv2.x < 0.0 || uv2.x > 1.0 || uv2.y < 0.0 || uv2.y > 1.0) ? vec4(0.0) : texture2D(uTex2, uv2);
-
-            // Diagonal liquid wave wipe threshold
-            float wipeSweep = (uv.y * 0.62 + uv.x * 0.38);
-            float wipeNoise = n1 * 0.12 + sin((uv.x + uv.y) * 14.0 + uTime * 2.8) * 0.05;
-            float sweep = smoothstep(0.0, 1.0, (p * 1.38 - wipeSweep * 0.88 + wipeNoise * peak));
-
-            // Chromatic aberration along the wave crest
-            if (peak > 0.04) {
-              float offset = 0.0075 * peak;
-              float r1 = texture2D(uTex1, clamp(uv1 + vec2(offset, 0.0), 0.0, 1.0)).r;
-              float b1 = texture2D(uTex1, clamp(uv1 - vec2(offset, 0.0), 0.0, 1.0)).b;
-              float r2 = texture2D(uTex2, clamp(uv2 + vec2(offset, 0.0), 0.0, 1.0)).r;
-              float b2 = texture2D(uTex2, clamp(uv2 - vec2(offset, 0.0), 0.0, 1.0)).b;
-              c1.r = mix(c1.r, r1, 0.45);
-              c1.b = mix(c1.b, b1, 0.45);
-              c2.r = mix(c2.r, r2, 0.45);
-              c2.b = mix(c2.b, b2, 0.45);
-            }
-
-            gl_FragColor = mix(c1, c2, sweep);
+          // Position the glowing lens ring indicator
+          if (ringRef.current) {
+            const diameter = (curRad * 2).toFixed(1);
+            ringRef.current.style.left = `${curX}%`;
+            ringRef.current.style.top = `${curY}%`;
+            ringRef.current.style.width = `${diameter}px`;
+            ringRef.current.style.height = `${diameter}px`;
+            ringRef.current.style.opacity = (curOp * 0.9).toFixed(2);
           }
-        `;
 
-        let gl = null;
-        try {
-          gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: true })
-            || canvas.getContext('experimental-webgl', { alpha: true, premultipliedAlpha: false });
-        } catch (e) {
-          gl = null;
-        }
-
-        if (!gl) {
-          setWebGlSupported(false);
-          return;
-        }
-
-        state.gl = gl;
-
-        function compileShader(type, src) {
-          const s = gl.createShader(type);
-          gl.shaderSource(s, src);
-          gl.compileShader(s);
-          if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-            console.warn(gl.getShaderInfoLog(s));
-            gl.deleteShader(s);
-            return null;
+          // Keep animating if hovered or still transitioning back
+          if (state.isHovered || state.currentRadius > 0.5 || state.currentOpacity > 0.01) {
+            state.rafId = requestAnimationFrame(updateAnimation);
+          } else {
+            state.rafId = null;
           }
-          return s;
-        }
-
-        const vs = compileShader(gl.VERTEX_SHADER, vsSource);
-        const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
-        if (!vs || !fs) {
-          setWebGlSupported(false);
-          return;
-        }
-
-        const prog = gl.createProgram();
-        gl.attachShader(prog, vs);
-        gl.attachShader(prog, fs);
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-          console.warn(gl.getProgramInfoLog(prog));
-          setWebGlSupported(false);
-          return;
-        }
-        state.program = prog;
-        gl.useProgram(prog);
-
-        const buf = gl.createBuffer();
-        state.buffer = buf;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-          -1, -1,  1, -1, -1,  1,
-          -1,  1,  1, -1,  1,  1
-        ]), gl.STATIC_DRAW);
-
-        const aPos = gl.getAttribLocation(prog, 'aPosition');
-        gl.enableVertexAttribArray(aPos);
-        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-        const uTex1Loc = gl.getUniformLocation(prog, 'uTex1');
-        const uTex2Loc = gl.getUniformLocation(prog, 'uTex2');
-        const uProgLoc = gl.getUniformLocation(prog, 'uProgress');
-        const uTimeLoc = gl.getUniformLocation(prog, 'uTime');
-        const uMouseLoc = gl.getUniformLocation(prog, 'uMouse');
-        const uHoverLoc = gl.getUniformLocation(prog, 'uHover');
-
-        gl.uniform1i(uTex1Loc, 0);
-        gl.uniform1i(uTex2Loc, 1);
-
-        function createTexture(img, unit) {
-          const tex = gl.createTexture();
-          gl.activeTexture(gl.TEXTURE0 + unit);
-          gl.bindTexture(gl.TEXTURE_2D, tex);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-          return tex;
-        }
-
-        const img1 = new Image();
-        const img2 = new Image();
-        let loaded = 0;
-
-        function checkLoaded() {
-          loaded++;
-          if (loaded === 2 && !state.isDestroyed) {
-            try {
-              state.textures = [createTexture(img1, 0), createTexture(img2, 1)];
-              startRenderLoop();
-            } catch (err) {
-              console.warn('WebGL texture upload issue, switching to fallback:', err);
-              setWebGlSupported(false);
-            }
-          }
-        }
-
-        img1.crossOrigin = 'anonymous';
-        img2.crossOrigin = 'anonymous';
-        img1.onload = checkLoaded;
-        img2.onload = checkLoaded;
-        img1.onerror = () => {
-          img1.src = 'Cozy Pink Study Baking Sticker.png';
         };
-        img2.onerror = () => {
-          img2.src = 'saloni real.png';
-        };
-        img1.src = frontSrc;
-        img2.src = backSrc;
 
-        const startTime = performance.now();
-
-        function startRenderLoop() {
-          function render() {
-            if (state.isDestroyed) return;
-
-            const time = (performance.now() - startTime) * 0.001;
-            state.progress += (state.targetProgress - state.progress) * 0.085;
-            state.hoverInfluence += (state.targetHoverInfluence - state.hoverInfluence) * 0.085;
-            state.mouse[0] += (state.targetMouse[0] - state.mouse[0]) * 0.12;
-            state.mouse[1] += (state.targetMouse[1] - state.mouse[1]) * 0.12;
-
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-
-            gl.uniform1f(uProgLoc, state.progress);
-            gl.uniform1f(uTimeLoc, time);
-            gl.uniform2f(uMouseLoc, state.mouse[0], state.mouse[1]);
-            gl.uniform1f(uHoverLoc, state.hoverInfluence);
-
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            state.rafId = requestAnimationFrame(render);
+        const startLoop = () => {
+          if (!state.rafId) {
+            state.rafId = requestAnimationFrame(updateAnimation);
           }
-          state.rafId = requestAnimationFrame(render);
-        }
+        };
+
+        state.startLoop = startLoop;
 
         return () => {
-          state.isDestroyed = true;
           if (state.rafId) cancelAnimationFrame(state.rafId);
-          if (gl) {
-            if (state.textures) {
-              state.textures.forEach(t => gl.deleteTexture(t));
-            }
-            if (state.buffer) gl.deleteBuffer(state.buffer);
-            if (state.program) gl.deleteProgram(state.program);
-          }
         };
-      }, [frontSrc, backSrc]);
+      }, []);
 
-      // Fallback smooth animation loop when WebGL is unavailable
-      useEffect(() => {
-        if (webGlSupported) return;
-        let rafId;
-        const target = isHovered ? 1 : 0;
-        function step() {
-          setFallbackProgress((prev) => {
-            const next = prev + (target - prev) * 0.09;
-            if (Math.abs(target - next) < 0.005) return target;
-            rafId = requestAnimationFrame(step);
-            return next;
-          });
-        }
-        rafId = requestAnimationFrame(step);
-        return () => { if (rafId) cancelAnimationFrame(rafId); };
-      }, [isHovered, webGlSupported]);
+      const updateCoords = (e) => {
+        const container = containerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-      const handlePointerEnter = () => {
+        const nx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+        const ny = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+
+        const state = animState.current;
+        state.targetX = nx;
+        state.targetY = ny;
+
+        if (state.startLoop) state.startLoop();
+      };
+
+      const handlePointerEnter = (e) => {
         setIsHovered(true);
-        stateRef.current.targetProgress = 1;
-        stateRef.current.targetHoverInfluence = 1;
+        const state = animState.current;
+        state.isHovered = true;
+        state.targetRadius = spotlightRadius;
+        state.targetOpacity = 1;
+        updateCoords(e);
+        if (state.startLoop) state.startLoop();
       };
 
       const handlePointerLeave = () => {
         setIsHovered(false);
-        stateRef.current.targetProgress = 0;
-        stateRef.current.targetHoverInfluence = 0;
+        const state = animState.current;
+        state.isHovered = false;
+        state.targetRadius = 0;
+        state.targetOpacity = 0;
+        if (state.startLoop) state.startLoop();
       };
 
       const handlePointerMove = (e) => {
-        const container = containerRef.current;
-        if (!container) return;
-        const rect = container.getBoundingClientRect();
-        const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-        stateRef.current.targetMouse = [nx, ny];
-      };
-
-      const handleToggle = () => {
-        setIsHovered((prev) => {
-          const next = !prev;
-          stateRef.current.targetProgress = next ? 1 : 0;
-          stateRef.current.targetHoverInfluence = next ? 1 : 0;
-          return next;
-        });
+        updateCoords(e);
       };
 
       return (
@@ -1026,67 +824,54 @@
           onMouseLeave={handlePointerLeave}
           onMouseMove={handlePointerMove}
           onTouchStart={handlePointerEnter}
+          onTouchMove={handlePointerMove}
           onTouchEnd={handlePointerLeave}
-          onClick={handleToggle}
-          className="relative w-full select-none cursor-pointer group"
+          className="relative w-full select-none cursor-none group"
           style={{ aspectRatio: '1420 / 1108' }}
-          title="Hover or tap to reveal real Saloni with wavy liquid effect!"
+          title="Move cursor over Saloni to smoothly reveal real photo underneath!"
         >
-          {/* SVG turbulence filter for fallback mode */}
-          {!webGlSupported && (
-            <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
-              <filter id="hero-wavy-filter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.035" numOctaves="2" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale={Math.sin(fallbackProgress * Math.PI) * 35} xChannelSelector="R" yChannelSelector="G" />
-              </filter>
-            </svg>
-          )}
+          {/* Base Layer: Illustrated Avatar Sticker */}
+          <img
+            src={frontSrc}
+            alt={alt}
+            onError={(e) => { e.currentTarget.src = 'Cozy Pink Study Baking Sticker.png'; }}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none drop-shadow-xl"
+          />
 
-          {/* WebGL Canvas Mode */}
-          {webGlSupported ? (
-            <canvas
-              ref={canvasRef}
-              width={1420}
-              height={1108}
-              className="w-full h-full block drop-shadow-xl select-none pointer-events-none transition-transform duration-300 group-hover:scale-[1.015]"
-            />
-          ) : (
-            /* Fallback Dual Image Mode with SVG wavy displacement */
-            <div 
-              className="relative w-full h-full drop-shadow-xl select-none pointer-events-none transition-transform duration-300 group-hover:scale-[1.015]"
-              style={{ filter: fallbackProgress > 0.05 && fallbackProgress < 0.95 ? 'url(#hero-wavy-filter)' : 'none' }}
-            >
-              <img
-                src={frontSrc}
-                alt={alt}
-                onError={(e) => { e.currentTarget.src = 'Cozy Pink Study Baking Sticker.png'; }}
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                style={{ opacity: 1 - fallbackProgress }}
-              />
-              <img
-                src={backSrc}
-                alt={alt}
-                onError={(e) => { e.currentTarget.src = 'saloni real.png'; }}
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                style={{ opacity: fallbackProgress }}
-              />
-            </div>
-          )}
-
-          {/* Interactive Floating Hand-drawn Badge Hint */}
-          <div 
-            className={`absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 sm:px-3.5 sm:py-1 rounded-full hand-border-soft bg-[#FAF7F0]/95 backdrop-blur-sm text-xs sm:text-sm font-marker font-bold transition-all duration-300 shadow-md pointer-events-none select-none z-30 flex items-center gap-1.5 whitespace-nowrap ${
-              isHovered 
-                ? 'text-[#BE185D] border-[#BE185D] bg-[#FCE7F3] scale-105 shadow-pink-200' 
-                : 'text-[#1F1F1F] border-[#1F1F1F] hover:scale-102'
-            }`}
+          {/* Reveal Layer: Real Photo (Undistorted, crystal-clear, revealed via smooth radial lens) */}
+          <div
+            ref={backImageRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              opacity: 0,
+              transition: 'opacity 0.15s ease-out',
+              willChange: 'mask-image, -webkit-mask-image'
+            }}
           >
-            <span className="inline-block transform transition-transform duration-300">
-              {isHovered ? '💖' : '✨'}
-            </span>
-            <span>
-              {isHovered ? 'Saloni in real life!' : 'Hover to reveal real me!'}
-            </span>
+            <img
+              src={backSrc}
+              alt={alt}
+              onError={(e) => { e.currentTarget.src = 'saloni real.png'; }}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none drop-shadow-xl"
+              style={{
+                transform: `translate(${-offsetRealX * 100}%, ${-offsetRealY * 100}%)`,
+              }}
+            />
+          </div>
+
+          {/* Subtle Glowing Lens Ring & Aura around the cursor reveal radius */}
+          <div
+            ref={ringRef}
+            className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-pink-400/60 shadow-[0_0_24px_rgba(244,114,182,0.55)] z-20"
+            style={{
+              width: 0,
+              height: 0,
+              opacity: 0,
+              willChange: 'transform, left, top, width, height, opacity'
+            }}
+          >
+            {/* Playful center lens pointer mark */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_8px_#ec4899] opacity-70 pointer-events-none" />
           </div>
         </div>
       );
