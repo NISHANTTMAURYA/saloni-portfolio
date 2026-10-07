@@ -38,8 +38,19 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Tendril Cursor: Clean 1-Line Zero-Config Integration as documented on website -->
-  <script src="tendril.js" data-tendril></script>
+  <!-- Tendril Cursor: Solid Normal Mode in sweet bakery rose / marker pink -->
+  <script src="tendril.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      new Tendril({
+        mixBlendMode: 'normal',
+        color: '#E11D48',            // Deep warm bakery rose (Saloni's primary brand accent)
+        secondaryColor: '#FB7185',   // Sweet macaron pink gradient tail
+        strokeWidth: 9,
+        gooeyBlur: 7
+      });
+    });
+  </script>
 
   <style>
     /* Consistent Hand-Drawn Aesthetic across entire portfolio */
