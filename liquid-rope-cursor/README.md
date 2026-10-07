@@ -118,6 +118,9 @@ cursor.setColor('#10b981', '#06b6d4');
 | `segments` | `number` | `22` | Number of kinematic joints along the rope (10–36). |
 | `segTau` | `number` | `36` | Lag time constant in ms (frame-rate independent). |
 | `gooeyBlur` | `number` | `7` | SVG `feGaussianBlur` radius (viscosity). |
+| `usePageLength` | `boolean` | `true` | Dynamically factors in the full scrollable page length into rope capacity. |
+| `offsetSize` | `number` | `6000` | Extra offset size in px added to rope capacity across the page. |
+| `ropeLengthOffset` | `number` | `6000` | Extra pixel offset capacity for page traversal. |
 | `hoverScale` | `number` | `1.35` | Scale factor for head droplet when hovering over interactive elements. |
 | `hoverSelector` | `string` | `'a, button, ...'` | CSS selector for interactive elements. |
 

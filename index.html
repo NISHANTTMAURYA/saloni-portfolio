@@ -654,16 +654,21 @@
           instance = new Engine({
             color: '#ec4899',         // Sweet marker pink to match portfolio aesthetic
             secondaryColor: '#f472b6',
-            segments: 22,
+            segments: 24,
             segTau: 36,
             gooeyBlur: 7,
-            strokeWidth: 9,
+            strokeWidth: 10,
             spillOnClick: true,
             splashOnClick: true,
             spillCount: 16,
             gravity: 0.38,
             dripTrail: true,
             forceTouch: true,         // Ensure it renders across all environments/emulators
+            usePageLength: true,      // Dynamically uses the full page scroll length to decide rope length
+            offsetSize: 6000,         // Increased offset size of the rope
+            ropeLengthOffset: 6000,   // Extra capacity offset for traversing long page sections
+            ropeSlack: 0.42,          // Catenary sag offset factor
+            ropeMinSlack: 42,         // Minimum base droop offset (px)
             hoverSelector: 'a, button, [role="button"], input, textarea, select, label, .interactive, [data-cursor-hover], .draggable-doodle'
           });
         } catch (err) {

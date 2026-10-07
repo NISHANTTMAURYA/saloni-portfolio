@@ -87,10 +87,13 @@
     anchorFollowDamping: 0.88,  // 'single' mode: high viscous liquid damping to prevent snappy jumping and overshoot
 
     // Anchored Rope Physics (Verlet, inextensible, length-limited, water-like drag)
-    ropeLength: 0,              // Max rope length in px (0 = auto ≈ 1.35x screen diagonal + ropeLengthOffset)
-    ropeLengthOffset: 3200,     // Extra pixel length added on top of screen diagonal for massive weaving capacity
-    ropeSlack: 0.35,            // Maximum slack fraction when cursor is close to anchor
-    ropeMinSlack: 28,           // Minimum base slack (px) so short cords still droop
+    ropeLength: 0,              // Max rope length in px (0 = auto ≈ page/screen length + offsetSize)
+    usePageLength: true,        // Decide rope length using page/document scroll length (true by default)
+    pageLengthRatio: 1.15,      // Multiplier factor for page length
+    ropeLengthOffset: 6000,     // Extra pixel offset added to rope capacity (increased for massive full-page weaving)
+    offsetSize: 6000,           // General offset size of the rope (alias for ropeLengthOffset or base slack offset)
+    ropeSlack: 0.42,            // Maximum slack fraction when cursor is close to anchor (increased droop offset)
+    ropeMinSlack: 42,           // Minimum base slack offset (px) so cords droop with expressive catenary curves
     ropeTensionSensitivity: 1.0,// Configurable sensitivity (0.2 = loose/sluggish, 1.0 = standard, 2.5 = hyper-reactive)
     ropeGravity: 0.42,          // Downward gravity pull for expressive catenary droop
     ropeDamping: 0.955,         // Velocity retention per frame (lower = thicker, more water-like)
@@ -1383,9 +1386,14 @@
 
           var looseness = Math.max(0, 1.0 - this.ropeTension);
 
-          // Active span: cursor head -> newest pin
-          var activeSlackCap = Math.max(30, 200 * (o.ropeSlack || 0.25));
-          var activeMaxExtra = Math.min(activeSlackCap, activeChord * (o.ropeSlack || 0.25)) + (o.ropeMinSlack || 20) * 0.5;
+          // Base slack offset: respects offsetSize if specified as a small offset or ropeMinSlack
+          var slackBase = (typeof o.offsetSize === 'number' && o.offsetSize < 1000)
+            ? o.offsetSize
+            : (o.ropeMinSlack || 42);
+
+          // Active span: cursor head -> newest pin (increased slack cap & offset)
+          var activeSlackCap = Math.max(60, 360 * (o.ropeSlack || 0.42));
+          var activeMaxExtra = Math.min(activeSlackCap, activeChord * (o.ropeSlack || 0.42)) + slackBase * 0.6;
           var activeTargetLen = activeChord + activeMaxExtra * looseness;
 
           energy += this._simulateSpan(pts, h, latestCP,
@@ -1397,8 +1405,8 @@
           for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
             var span = this.completedSpans[cIdx];
             var ch = spanChords[cIdx];
-            var spanSlackCap = Math.max(30, 200 * (o.ropeSlack || 0.25));
-            var spanMaxExtra = Math.min(spanSlackCap, ch * (o.ropeSlack || 0.25)) + (o.ropeMinSlack || 20) * 0.5;
+            var spanSlackCap = Math.max(60, 360 * (o.ropeSlack || 0.42));
+            var spanMaxExtra = Math.min(spanSlackCap, ch * (o.ropeSlack || 0.42)) + slackBase * 0.6;
             var spanTargetLen = ch + spanMaxExtra * looseness;
 
             energy += this._simulateSpan(
@@ -1434,15 +1442,53 @@
   };
 
   /**
+   * Returns total scrollable page/document length (height in px)
+   */
+  Tendril.prototype._getPageLength = function () {
+    if (typeof document === 'undefined') return this.viewH || 800;
+    var body = document.body;
+    var html = document.documentElement;
+    return Math.max(
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0,
+      html ? html.clientHeight : 0,
+      html ? html.scrollHeight : 0,
+      html ? html.offsetHeight : 0,
+      (typeof window !== 'undefined' ? window.innerHeight : 800)
+    );
+  };
+
+  /**
    * Maximum physical rope length (px)
+   * Dynamically factors in the full scrollable page length (height & diagonal)
+   * plus the enlarged offset size, enabling continuous anchoring across long web pages!
    */
   Tendril.prototype._ropeLength = function () {
-    if (this.opts.ropeLength > 0) return this.opts.ropeLength;
+    if (typeof this.opts.ropeLength === 'number' && this.opts.ropeLength > 0) {
+      return this.opts.ropeLength;
+    }
     var w = this.viewW || (typeof window !== 'undefined' ? window.innerWidth : 1200);
-    var h = this.viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
-    var diag = Math.hypot(w, h);
-    var offset = (typeof this.opts.ropeLengthOffset === 'number') ? this.opts.ropeLengthOffset : 3200;
-    return Math.max(1600, Math.round(diag * 1.35) + offset);
+    var vh = this.viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+    var viewportDiag = Math.hypot(w, vh);
+
+    // Configurable offset size of the rope (default increased to 6000px)
+    var offset = (typeof this.opts.offsetSize === 'number' && this.opts.offsetSize >= 100)
+      ? this.opts.offsetSize
+      : ((typeof this.opts.ropeLengthOffset === 'number') ? this.opts.ropeLengthOffset : 6000);
+
+    // Factor in the page's scrollable length (height / diagonal) when usePageLength is active
+    if (this.opts.usePageLength !== false) {
+      var pageLen = this._getPageLength();
+      var pageW = (typeof document !== 'undefined' && document.documentElement)
+        ? Math.max(document.documentElement.scrollWidth, w)
+        : w;
+      var pageDiag = Math.hypot(pageW, pageLen);
+      var ratio = (typeof this.opts.pageLengthRatio === 'number') ? this.opts.pageLengthRatio : 1.15;
+      var basePageLength = Math.max(pageLen * ratio, pageDiag);
+      return Math.max(2400, Math.round(basePageLength) + offset);
+    }
+
+    return Math.max(1600, Math.round(viewportDiag * 1.35) + offset);
   };
 
   /**

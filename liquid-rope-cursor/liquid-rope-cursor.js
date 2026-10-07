@@ -87,9 +87,13 @@
     anchorFollowDamping: 0.88,  // 'single' mode: high viscous liquid damping to prevent snappy jumping and overshoot
 
     // Anchored Rope Physics (Verlet, inextensible, length-limited, water-like drag)
-    ropeLength: 0,              // Max rope length in px (0 = auto ≈ 88% of viewport diagonal)
-    ropeSlack: 0.35,            // Maximum slack fraction when cursor is close to anchor
-    ropeMinSlack: 28,           // Minimum base slack (px) so short cords still droop
+    ropeLength: 0,              // Max rope length in px (0 = auto ≈ page/screen length + offsetSize)
+    usePageLength: true,        // Decide rope length using page/document scroll length (true by default)
+    pageLengthRatio: 1.15,      // Multiplier factor for page length
+    ropeLengthOffset: 6000,     // Extra pixel offset added to rope capacity (increased for massive full-page weaving)
+    offsetSize: 6000,           // General offset size of the rope (alias for ropeLengthOffset or base slack offset)
+    ropeSlack: 0.42,            // Maximum slack fraction when cursor is close to anchor (increased droop offset)
+    ropeMinSlack: 42,           // Minimum base slack offset (px) so cords droop with expressive catenary curves
     ropeTensionSensitivity: 1.0,// Configurable sensitivity (0.2 = loose/sluggish, 1.0 = standard, 2.5 = hyper-reactive)
     ropeGravity: 0.42,          // Downward gravity pull for expressive catenary droop
     ropeDamping: 0.955,         // Velocity retention per frame (lower = thicker, more water-like)
@@ -939,6 +943,16 @@
       frozenSpan[0].y = y;
       frozenSpan[0].px = x;
       frozenSpan[0].py = y;
+
+      // Freeze current active span into completedSpans exactly as it rests
+      var prevPin = this.checkpoints[this.checkpoints.length - 2];
+      if (prevPin) {
+        var lIdx = frozenSpan.length - 1;
+        frozenSpan[lIdx].x = prevPin.x;
+        frozenSpan[lIdx].y = prevPin.y;
+        frozenSpan[lIdx].px = prevPin.x;
+        frozenSpan[lIdx].py = prevPin.y;
+      }
       this.completedSpans.push(frozenSpan);
 
       // 2. Initialize new active span starting at (x, y) with zero velocity jump
@@ -1338,42 +1352,68 @@
           var activeChord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
           totalChord += activeChord;
 
-          // DYNAMIC CONTINUOUS TENSION WITH DEVELOPER SENSITIVITY:
-          // The distance of the cursor (h) from the newest anchor (latestCP) directly controls
-          // how taut or loose the rope is across all connected spans.
-          //
-          // When cursor pulls away from anchor, tension smoothly builds up and pulls ALL spans taut.
-          // When cursor stays close to anchor, slack is generous and all spans droop organically.
+          // CONTINUOUS DYNAMIC TENSION & SLACK SHARING ACROSS ALL ANCHOR SPANS:
+          // The tension in the rope is shared globally like a cord threaded through rings.
+          // When pulling away or moving fast, tension builds smoothly and pulls ALL spans taut.
+          // When relaxing, moving close, or pausing, tension eases and ALL spans droop naturally with gravity.
           var sens = (typeof o.ropeTensionSensitivity === 'number' && o.ropeTensionSensitivity > 0)
             ? o.ropeTensionSensitivity : 1.0;
 
-          // Reference anchor stretch distance scaled by sensitivity (default ~360px)
-          var stretchThreshold = Math.max(120, 360 / sens);
+          // Stretch distance threshold to achieve full tension (scaled by sensitivity)
+          var stretchThreshold = Math.max(100, 360 / sens);
           var pullRatio = Math.min(1.0, activeChord / stretchThreshold);
+          var activeTension = Math.pow(pullRatio, 1.3);
 
-          // Continuous slack fraction: from maximum droop (o.ropeSlack) when near, down to 0 (tight line) when pulled
-          var slackFraction = o.ropeSlack * Math.max(0, 1.0 - Math.pow(pullRatio, 1.4));
-          this.ropeTension = Math.min(1.0, Math.pow(pullRatio, 1.4));
+          // Cursor movement velocity also builds dynamic pull tension
+          var cursorSpeed = Math.hypot(h.x - h.px, h.y - h.py) / (dt > 0 ? dt : 16);
+          var speedTension = Math.min(1.0, cursorSpeed * 0.12 * sens);
 
-          // Base extra slack pixels that shrink as cursor pulls away
-          var minSlackCurrent = o.ropeMinSlack * Math.max(0, 1.0 - pullRatio);
+          // Global cord constraint: rope pulls taut if woven length approaches physical limit
+          var globalTension = Math.max(0, Math.min(1.0, (totalChord - L_rope * 0.75) / (L_rope * 0.25)));
 
-          // Active span: cursor head  ->  newest pin
-          var activeExtra = activeChord * slackFraction + minSlackCurrent;
+          // Target tension combines distance pull, motion dynamics, and global length limit
+          var targetTension = Math.max(activeTension, speedTension, globalTension);
+
+          // Smooth low-pass physical tension integration:
+          // Guarantees zero instantaneous jump/pop when planting an anchor pin,
+          // while allowing rapid tightening when actively pulling!
+          if (typeof this.ropeTension !== 'number' || isNaN(this.ropeTension)) {
+            this.ropeTension = targetTension;
+          } else {
+            var tensionRate = 1 - Math.exp(-dt / (targetTension > this.ropeTension ? 100 : 220));
+            this.ropeTension += (targetTension - this.ropeTension) * tensionRate;
+          }
+
+          var looseness = Math.max(0, 1.0 - this.ropeTension);
+
+          // Base slack offset: respects offsetSize if specified as a small offset or ropeMinSlack
+          var slackBase = (typeof o.offsetSize === 'number' && o.offsetSize < 1000)
+            ? o.offsetSize
+            : (o.ropeMinSlack || 42);
+
+          // Active span: cursor head -> newest pin (increased slack cap & offset)
+          var activeSlackCap = Math.max(60, 360 * (o.ropeSlack || 0.42));
+          var activeMaxExtra = Math.min(activeSlackCap, activeChord * (o.ropeSlack || 0.42)) + slackBase * 0.6;
+          var activeTargetLen = activeChord + activeMaxExtra * looseness;
+
           energy += this._simulateSpan(pts, h, latestCP,
-            activeChord + activeExtra, f, wobble);
+            activeTargetLen, f, wobble);
 
           // Completed spans: between planted anchor pins
-          // Their slack directly responds to cursor stretch! When cursor pulls away, they straighten.
-          // When cursor moves close, they loosen and droop together.
+          // Full physical catenary slack sharing: ALL completed spans tighten when pulling
+          // and gracefully fall / droop under gravity when relaxing!
           for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
+            var span = this.completedSpans[cIdx];
             var ch = spanChords[cIdx];
-            var spanExtra = ch * slackFraction + (minSlackCurrent * 0.5);
+            var spanSlackCap = Math.max(60, 360 * (o.ropeSlack || 0.42));
+            var spanMaxExtra = Math.min(spanSlackCap, ch * (o.ropeSlack || 0.42)) + slackBase * 0.6;
+            var spanTargetLen = ch + spanMaxExtra * looseness;
+
             energy += this._simulateSpan(
-              this.completedSpans[cIdx],
+              span,
               this.checkpoints[cIdx + 1],
               this.checkpoints[cIdx],
-              ch + spanExtra,
+              spanTargetLen,
               f, wobble
             );
           }
@@ -1402,14 +1442,53 @@
   };
 
   /**
+   * Returns total scrollable page/document length (height in px)
+   */
+  Tendril.prototype._getPageLength = function () {
+    if (typeof document === 'undefined') return this.viewH || 800;
+    var body = document.body;
+    var html = document.documentElement;
+    return Math.max(
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0,
+      html ? html.clientHeight : 0,
+      html ? html.scrollHeight : 0,
+      html ? html.offsetHeight : 0,
+      (typeof window !== 'undefined' ? window.innerHeight : 800)
+    );
+  };
+
+  /**
    * Maximum physical rope length (px)
+   * Dynamically factors in the full scrollable page length (height & diagonal)
+   * plus the enlarged offset size, enabling continuous anchoring across long web pages!
    */
   Tendril.prototype._ropeLength = function () {
-    if (this.opts.ropeLength > 0) return this.opts.ropeLength;
+    if (typeof this.opts.ropeLength === 'number' && this.opts.ropeLength > 0) {
+      return this.opts.ropeLength;
+    }
     var w = this.viewW || (typeof window !== 'undefined' ? window.innerWidth : 1200);
-    var h = this.viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
-    var diag = Math.hypot(w, h);
-    return Math.max(600, Math.min(2400, Math.round(diag * 0.88)));
+    var vh = this.viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+    var viewportDiag = Math.hypot(w, vh);
+
+    // Configurable offset size of the rope (default increased to 6000px)
+    var offset = (typeof this.opts.offsetSize === 'number' && this.opts.offsetSize >= 100)
+      ? this.opts.offsetSize
+      : ((typeof this.opts.ropeLengthOffset === 'number') ? this.opts.ropeLengthOffset : 6000);
+
+    // Factor in the page's scrollable length (height / diagonal) when usePageLength is active
+    if (this.opts.usePageLength !== false) {
+      var pageLen = this._getPageLength();
+      var pageW = (typeof document !== 'undefined' && document.documentElement)
+        ? Math.max(document.documentElement.scrollWidth, w)
+        : w;
+      var pageDiag = Math.hypot(pageW, pageLen);
+      var ratio = (typeof this.opts.pageLengthRatio === 'number') ? this.opts.pageLengthRatio : 1.15;
+      var basePageLength = Math.max(pageLen * ratio, pageDiag);
+      return Math.max(2400, Math.round(basePageLength) + offset);
+    }
+
+    return Math.max(1600, Math.round(viewportDiag * 1.35) + offset);
   };
 
   /**
@@ -1434,6 +1513,7 @@
 
     var first = arr[0], last = arr[segs];
     first.x = A.x; first.y = A.y;
+    first.px = A.x; first.py = A.y;
     last.x = B.x; last.y = B.y;
     last.px = B.x; last.py = B.y;
 
@@ -1558,8 +1638,7 @@
     }
     this.rope.setAttribute('d', d);
 
-    var D_diag = Math.hypot(this.viewW, this.viewH);
-    var L_max = Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+    var L_max = this._ropeLength();
 
     // Calculate total chord distance across all active anchors
     var totalChord = 0;
