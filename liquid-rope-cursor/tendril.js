@@ -79,9 +79,10 @@
     dripTrail: true,            // Fast falling drops shed trailing droplets
 
     // 2-Stage Triple-Tap Anchor & Multi-Waypoint Mechanics
+    anchorMode: 'multi',        // 'multi' (multi-pin weaving) | 'single' (1 pin only; new breaks old) | 'off' (disabled)
     tripleTapAnchor: true,      // Triple-Tap = Toggle Anchor / Sever & Drop
     tripleTapMaxInterval: 480,  // Maximum milliseconds across 3 taps
-    multiCheckpoints: true,     // Single click while in Anchor mode drops additional pins!
+    multiCheckpoints: true,     // Single click while in Anchor mode drops additional pins (in 'multi' mode)
     severedRopeGravity: 0.65,   // Gravitational downward pull for detached falling ropes
     severedRopeDrag: 0.985,     // Air resistance for detached ropes
 
@@ -400,10 +401,15 @@
 
   Tendril.prototype._clearSelection = function () {
     try {
-      var sel = window.getSelection ? window.getSelection() : null;
-      if (sel) {
-        if (sel.empty) sel.empty();
-        else if (sel.removeAllRanges) sel.removeAllRanges();
+      if (window.getSelection) {
+        var sel = window.getSelection();
+        if (sel) {
+          if (sel.removeAllRanges) sel.removeAllRanges();
+          if (sel.empty) sel.empty();
+        }
+      }
+      if (document.selection && document.selection.empty) {
+        document.selection.empty();
       }
     } catch (e) {}
   };
@@ -420,7 +426,8 @@
   Tendril.prototype._onMouseDown = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
-    if (e.detail > 2) {
+    // Detail >= 2 is double-click or triple-click: prevent browser from highlighting words/paragraphs!
+    if (e.detail >= 2) {
       if (e.cancelable) e.preventDefault();
       this._clearSelection();
     }
@@ -429,11 +436,13 @@
   Tendril.prototype._onSelectStart = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
-    if (this.tapHistory && this.tapHistory.length > 1) {
-      var last = this.tapHistory[this.tapHistory.length - 1];
-      if (performance.now() - last.time < 350) {
-        if (e.cancelable) e.preventDefault();
-      }
+    var now = performance.now();
+    var recentTap = this.tapHistory && this.tapHistory.length > 0 &&
+      (now - this.tapHistory[this.tapHistory.length - 1].time < 600);
+    // Block selection whenever rapid-tapping for anchors or actively anchored
+    if (recentTap || this.isAnchored) {
+      if (e.cancelable) e.preventDefault();
+      this._clearSelection();
     }
   };
 
@@ -443,6 +452,20 @@
     var now = performance.now();
     var isInteractive = this._isInteractive(e.target);
     if (isInteractive) return;
+
+    if (e.detail >= 2) {
+      if (e.cancelable) e.preventDefault();
+      this._clearSelection();
+    }
+
+    // If anchor mode is completely 'off', skip all anchoring logic and do normal splash/spill
+    if (this.opts.anchorMode === 'off') {
+      if (this.opts.splashOnClick) this._splash(x, y);
+      if (this.opts.spillOnClick) this.spill(x, y);
+      this.headScale = this.targetHeadScale * 0.65;
+      this._wake();
+      return;
+    }
 
     if (this.opts.tripleTapAnchor) {
       this.tapHistory.push({ time: now, x: x, y: y });
@@ -460,6 +483,7 @@
             clearTimeout(this._singleClickTimer);
             this._singleClickTimer = null;
           }
+          if (e.cancelable) e.preventDefault();
           this._clearSelection();
 
           if (!this.isAnchored) {
@@ -470,15 +494,14 @@
             this.releaseAllAndDrop();
           }
 
-          if (e.cancelable) e.preventDefault();
           this._wake();
           return;
         }
       }
     }
 
-    // While already in Anchor mode, single click adds an additional anchor point!
-    if (this.isAnchored && this.opts.multiCheckpoints) {
+    // While already in Anchor mode, single click behavior:
+    if (this.isAnchored) {
       if (this._singleClickTimer) {
         clearTimeout(this._singleClickTimer);
         this._singleClickTimer = null;
@@ -487,8 +510,14 @@
       this._singleClickTimer = setTimeout(function () {
         self._singleClickTimer = null;
         if (self.isAnchored) {
-          self.addCheckpoint(x, y);
-          self._wake();
+          if (self.opts.anchorMode === 'multi' && self.opts.multiCheckpoints) {
+            self.addCheckpoint(x, y);
+            self._wake();
+          } else if (self.opts.anchorMode === 'single') {
+            // In single anchor mode, new anchor breaks old anchor and takes over!
+            self.addCheckpoint(x, y);
+            self._wake();
+          }
         }
       }, 240);
       return;
@@ -549,14 +578,126 @@
   /* ---------------- Multi-Checkpoint Architecture ---------------- */
 
   /**
+   * Set Anchor Mode: 'multi' (multi-pin weaving) | 'single' (1 pin only; new breaks old) | 'off' (disabled)
+   */
+  Tendril.prototype.setAnchorMode = function (mode) {
+    if (mode !== 'multi' && mode !== 'single' && mode !== 'off') {
+      console.warn('Tendril: Invalid anchorMode "' + mode + '". Use "multi", "single", or "off".');
+      return;
+    }
+    this.opts.anchorMode = mode;
+
+    if (mode === 'off') {
+      if (this.isAnchored) {
+        this.clearCheckpoints();
+      }
+    } else if (mode === 'single') {
+      // In single mode, only 1 checkpoint is allowed: retain only the latest pin and break older pins
+      if (this.checkpoints.length > 1) {
+        while (this.checkpoints.length > 1) {
+          var old = this.checkpoints.shift();
+          this._splash(old.x, old.y);
+          if (old.el && old.el.parentNode) old.el.parentNode.removeChild(old.el);
+        }
+        this.completedSpans.length = 0;
+        this.anchor.x = this.checkpoints[0].x;
+        this.anchor.y = this.checkpoints[0].y;
+      }
+    }
+
+    if (typeof this.onAnchorModeChange === 'function') {
+      try {
+        this.onAnchorModeChange(mode);
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    this._wake();
+  };
+
+  Tendril.prototype.getAnchorMode = function () {
+    return this.opts.anchorMode;
+  };
+
+  /**
    * Add an anchor checkpoint / pin at (x, y)
-   * The liquid rope threads through all checkpoints before connecting to the cursor!
+   * Supports 'multi' (chains waypoints), 'single' (breaks old anchor and moves to new), and 'off'
    */
   Tendril.prototype.addCheckpoint = function (x, y) {
+    if (this.opts.anchorMode === 'off') return;
+
     x = typeof x === 'number' ? x : this.target.x;
     y = typeof y === 'number' ? y : this.target.y;
 
     var wasFree = !this.isAnchored || this.checkpoints.length === 0;
+
+    // --- SINGLE ANCHOR MODE LOGIC ---
+    if (this.opts.anchorMode === 'single') {
+      if (!wasFree && this.checkpoints.length > 0) {
+        // Break the OLD anchor pin!
+        var oldCP = this.checkpoints[0];
+        this._splash(oldCP.x, oldCP.y);
+        this.spill(oldCP.x, oldCP.y, { count: 12, speed: 4.5 });
+        if (oldCP.el && oldCP.el.parentNode) {
+          oldCP.el.parentNode.removeChild(oldCP.el);
+        }
+        this.checkpoints.length = 0;
+        this.completedSpans.length = 0;
+      }
+
+      this.isAnchored = true;
+      this.anchor.x = x;
+      this.anchor.y = y;
+
+      var circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('cx', r1(x));
+      circle.setAttribute('cy', r1(y));
+      circle.setAttribute('r', (this.opts.headRadius * 1.2).toFixed(1));
+      circle.setAttribute('fill', this.opts.color);
+      circle.setAttribute('stroke', '#ffffff');
+      circle.setAttribute('stroke-width', '2.5');
+      this.checkpointGroup.appendChild(circle);
+
+      this.checkpoints.push({ x: x, y: y, el: circle });
+
+      // Start new active rope with tail anchored at (x, y)
+      this.completedSpans = [];
+      var lastIdx = this.points.length - 1;
+      this.points[lastIdx].x = x;
+      this.points[lastIdx].y = y;
+      this.points[lastIdx].px = x;
+      this.points[lastIdx].py = y;
+      var h = this.points[0];
+      for (var pIdx = 1; pIdx < lastIdx; pIdx++) {
+        var frac = pIdx / lastIdx;
+        var mx = h.x + (x - h.x) * frac;
+        var my = h.y + (y - h.y) * frac + Math.sin(frac * Math.PI) * 20;
+        this.points[pIdx].x = mx;
+        this.points[pIdx].y = my;
+        this.points[pIdx].px = mx;
+        this.points[pIdx].py = my;
+      }
+
+      this._splash(x, y);
+      this._clearSelection();
+
+      if (typeof this.onAnchorChange === 'function') {
+        try {
+          this.onAnchorChange(true, {
+            mode: 'single',
+            count: this.checkpoints.length,
+            checkpoints: this.checkpoints
+          });
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+      this._wake();
+      return;
+    }
+
+    // --- MULTI ANCHOR MODE LOGIC ---
     this.isAnchored = true;
     this.anchor.x = x;
     this.anchor.y = y;
@@ -627,6 +768,7 @@
     if (typeof this.onAnchorChange === 'function') {
       try {
         this.onAnchorChange(true, {
+          mode: 'multi',
           count: this.checkpoints.length,
           checkpoints: this.checkpoints
         });
@@ -697,6 +839,7 @@
    * Toggle Anchor shorthand (Maintains backward compatibility)
    */
   Tendril.prototype.toggleAnchor = function (x, y) {
+    if (this.opts.anchorMode === 'off') return;
     if (!this.isAnchored) {
       this.addCheckpoint(x, y);
     } else {
@@ -934,11 +1077,28 @@
           energy += Math.abs(dx) + Math.abs(dy);
         }
       } else {
-        // --- LIQUID ELASTIC ANCHOR PHYSICS (IDENTICAL FLUID KINEMATICS TO FREE ROPE MODE) ---
+        // --- LIQUID ELASTIC ANCHOR PHYSICS (COHESIVE TENSION & SLACK ACROSS ALL SPANS) ---
         var numPins = this.checkpoints.length;
         if (numPins > 0) {
           var latestCP = this.checkpoints[numPins - 1];
           var wobble = this.idle && o.idleWobble;
+
+          var D_diag = Math.hypot(this.viewW, this.viewH);
+          var L_max = Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+
+          // Calculate total chord distance across all active spans
+          var totalChord = 0;
+          for (var c = 0; c < this.completedSpans.length; c++) {
+            var pA = this.checkpoints[c];
+            var pB = this.checkpoints[c + 1];
+            totalChord += Math.hypot(pB.x - pA.x, pB.y - pA.y);
+          }
+          var activeChord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
+          totalChord += activeChord;
+
+          // Elastic stretch & slack ratio (0 = maximum tight stretch, 1 = completely loose slack!)
+          var stretchRatio = Math.min(1.0, totalChord / L_max);
+          var slack = Math.max(0.0, 1.0 - stretchRatio); // 1.0 when close/loose, 0.0 when stretched tight!
 
           // 1. Forward liquid follower wave along the active span (IDENTICAL to free cursor mode!)
           for (var i = 1; i < n; i++) {
@@ -948,7 +1108,7 @@
             if (wobble) {
               p.ax += o.idleSpeed * f * (1 + i * 0.08);
               p.ay += o.idleSpeed * f * (1 + i * 0.08);
-              var amp = o.idleAmplitude * (i / n);
+              var amp = o.idleAmplitude * (i / n) * (0.3 + 0.7 * slack);
               tx += Math.sin(p.ax) * amp;
               ty += Math.cos(p.ay) * amp;
               k = a * 0.72;
@@ -961,15 +1121,12 @@
           }
 
           // 2. Smooth anchor boundary correction
-          // Tail pts[n - 1] is anchored at latestCP.
-          // Distribute tail offset with progressive weighting (s^1.25)
-          // Near the cursor (s small), weight ~ 0, so fluid whipping waves are 100% free!
-          // Near the anchor (s -> 1), smoothly guides the rope to meet the pin.
           var errX = pts[n - 1].x - latestCP.x;
           var errY = pts[n - 1].y - latestCP.y;
 
-          var chord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
-          var sagAmp = Math.min(26, chord * 0.04);
+          // Active span sag scales with slack: when tight (slack=0) -> straight taut cord!
+          // When loose (slack > 0) -> natural gravitational liquid droop!
+          var activeSag = Math.min(30, activeChord * 0.12) * slack;
 
           for (var i = 1; i < n; i++) {
             var s = i / (n - 1);
@@ -977,29 +1134,53 @@
             pts[i].x -= errX * weight;
             pts[i].y -= errY * weight;
 
-            // Organic catenary droop (arches downward with gravity)
+            // Organic catenary droop (tightens when reaching length, sags when loose)
             if (i < n - 1) {
-              pts[i].y += Math.sin(s * Math.PI) * sagAmp * 0.20;
+              pts[i].y += Math.sin(s * Math.PI) * activeSag * 0.22;
             }
           }
           pts[n - 1].x = latestCP.x;
           pts[n - 1].y = latestCP.y;
 
-          // 3. Completed spans stay fixed at their anchor endpoints
+          // 3. Completed spans: DYNAMIC TIGHTENING & LOOSENING (Physical Slack / Tension Coupling)
+          // When the rope is pulled towards its length (slack -> 0), ALL spans tighten and straighten!
+          // When the rope is loose (slack > 0), all spans loosen and droop downward with gravity!
           if (this.completedSpans.length > 0) {
             for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
               var spanPts = this.completedSpans[cIdx];
               var pinTail = this.checkpoints[cIdx];
               var pinHead = this.checkpoints[cIdx + 1];
-              spanPts[0].x = pinHead.x; spanPts[0].y = pinHead.y;
-              spanPts[spanPts.length - 1].x = pinTail.x; spanPts[spanPts.length - 1].y = pinTail.y;
+              var sChord = Math.hypot(pinHead.x - pinTail.x, pinHead.y - pinTail.y);
 
-              if (wobble) {
-                for (var m = 1; m < spanPts.length - 1; m++) {
-                  var u = m / (spanPts.length - 1);
+              // Gravitational sag for this span, directly governed by global slack!
+              var spanSag = Math.min(42, sChord * 0.18) * slack;
+              var spanLen = spanPts.length;
+
+              spanPts[0].x = pinHead.x;
+              spanPts[0].y = pinHead.y;
+              spanPts[spanLen - 1].x = pinTail.x;
+              spanPts[spanLen - 1].y = pinTail.y;
+
+              for (var m = 1; m < spanLen - 1; m++) {
+                var u = m / (spanLen - 1);
+                // Straight chord baseline between the two pinned anchors
+                var baseX = pinHead.x * (1 - u) + pinTail.x * u;
+                var baseY = pinHead.y * (1 - u) + pinTail.y * u;
+
+                // Target position with dynamic gravitational sag
+                var targetY = baseY + Math.sin(u * Math.PI) * spanSag;
+                var targetX = baseX;
+
+                // Living harmonic breathing when stationary
+                if (wobble && slack > 0.08) {
                   spanPts[m].ax += o.idleSpeed * f * 0.5;
-                  spanPts[m].y += Math.sin(spanPts[m].ax) * o.idleAmplitude * Math.sin(u * Math.PI) * 0.06;
+                  targetY += Math.sin(spanPts[m].ax) * o.idleAmplitude * Math.sin(u * Math.PI) * 0.08 * slack;
                 }
+
+                // Smooth physical relaxation to target (tightens when pulled, loosens when released)
+                spanPts[m].x += (targetX - spanPts[m].x) * (a * 0.35);
+                spanPts[m].y += (targetY - spanPts[m].y) * (a * 0.35);
+                energy += Math.abs(targetX - spanPts[m].x) + Math.abs(targetY - spanPts[m].y);
               }
             }
           }
