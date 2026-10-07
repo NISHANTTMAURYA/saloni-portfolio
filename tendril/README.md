@@ -21,8 +21,8 @@
 
 ### 2. 🔍 The Liquid Lens: Ricardo Mendieta's Text Inversion Effect
 - Using `mix-blend-mode: difference`, the liquid droplet calculates mathematical difference against underlying pixels.
-- When hovering over dark text, the text inverts complementary and shines vividly through the drop without obscuring content!
-- Easily toggle between `difference` (Text Reveal Lens), `normal` (Solid Viscous Ink), and `screen` (Luminous Cyber Glow).
+- Easily toggle between `difference` (Text Reveal Lens), `normal` (Solid Viscous Ink), and `screen` (Luminous Cyber Glow — *best used in Dark Mode*).
+> **💡 Tip regarding `screen` blend mode:** Because `mix-blend-mode: screen` is an additive illumination algorithm, it creates an intense cyber glow against dark backgrounds, but naturally dissolves into white on light backgrounds. For light backgrounds, use `difference` or `normal`.
 
 ### 3. 📱 Mobile Phone & Touch Screen Support
 - Fully optimized for touchscreens and mobile devices:
@@ -93,8 +93,9 @@ cursor.clearCheckpoints();
 cursor.spill({ count: 20, speed: 6.0 });
 
 // Switch blend modes on the fly:
-cursor.setBlendMode('difference'); // Inversion lens
-cursor.setBlendMode('normal');     // Solid ink
+cursor.setBlendMode('difference'); // Inversion lens (works everywhere)
+cursor.setBlendMode('normal');     // Solid ink (opaque)
+cursor.setBlendMode('screen');     // Luminous cyber glow (best in Dark Mode)
 
 // Report bug or request integration assistance:
 cursor.reportBug();

@@ -3,7 +3,7 @@ export interface TendrilOptions {
   color?: string;
   /** Secondary tail gradient color (auto-derived if null). Default: '#06b6d4' (Cyan) */
   secondaryColor?: string | null;
-  /** CSS mix-blend-mode ('difference' | 'normal' | 'screen'). Default: 'difference' */
+  /** CSS mix-blend-mode ('difference' | 'normal' | 'screen'). Note: 'screen' is additive and best used on dark backgrounds/themes. Default: 'difference' */
   mixBlendMode?: string;
   /** Number of physical joints along the rope (10 to 40). Default: 22 */
   segments?: number;
@@ -100,7 +100,7 @@ export class Tendril {
   /** Set cursor colors dynamically */
   setColor(primary: string, secondary?: string | null): void;
 
-  /** Set blend mode dynamically ('difference' | 'normal' | 'screen') */
+  /** Set blend mode dynamically ('difference' | 'normal' | 'screen'). Note: 'screen' is additive cyber glow, best viewed in dark mode. */
   setBlendMode(mode: string): void;
 
   /** Update runtime configuration parameters live */

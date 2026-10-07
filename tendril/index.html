@@ -497,6 +497,93 @@
       color: #fff;
       box-shadow: 0 2px 10px var(--accent-glow);
     }
+    .lens-pill .pill-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin-left: 6px;
+      background: rgba(0, 0, 0, 0.08);
+      color: inherit;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      vertical-align: middle;
+      transition: background 0.2s;
+    }
+    body.dark-mode .lens-pill .pill-tag {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .lens-pill.active .pill-tag {
+      background: rgba(0, 0, 0, 0.22);
+      color: #fff;
+    }
+
+    .lens-notice-box {
+      margin-bottom: 22px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: fadeInNotice 0.25s ease-out;
+    }
+    body.dark-mode .lens-notice-box {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    .lens-notice-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1;
+      min-width: 260px;
+    }
+    .lens-notice-content .notice-icon {
+      font-size: 1.35rem;
+      line-height: 1.2;
+    }
+    .lens-notice-content strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.92rem;
+      margin-bottom: 2px;
+    }
+    .lens-notice-content p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .switch-dark-btn {
+      border: none;
+      background: #18181b;
+      color: #fafafa;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .switch-dark-btn:hover {
+      transform: translateY(-1px);
+      background: #27272a;
+    }
+    @keyframes fadeInNotice {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     .lens-sandbox {
       background: var(--bg-card-subtle);
@@ -1138,8 +1225,21 @@
         <div class="lens-mode-pills">
           <button class="lens-pill active" id="pillDiff" onclick="applyBlendMode('difference')" data-cursor-hover="true">🔍 Text Reveal (Difference)</button>
           <button class="lens-pill" id="pillNormal" onclick="applyBlendMode('normal')" data-cursor-hover="true">🩸 Solid Liquid (Normal)</button>
-          <button class="lens-pill" id="pillScreen" onclick="applyBlendMode('screen')" data-cursor-hover="true">✨ Luminous Glow (Screen)</button>
+          <button class="lens-pill" id="pillScreen" onclick="applyBlendMode('screen')" data-cursor-hover="true">✨ Luminous Glow (Screen) <span class="pill-tag">🌙 Best in Dark Mode</span></button>
         </div>
+      </div>
+
+      <div id="screenNotice" class="lens-notice-box" style="display: none;">
+        <div class="lens-notice-content">
+          <span class="notice-icon">🌙</span>
+          <div>
+            <strong>Dark Mode Recommended for Screen Blend Mode</strong>
+            <p>Luminous Glow uses additive lighting (<code>mix-blend-mode: screen</code>). It creates an intense electric cyber glow against dark surfaces, but mathematically dissolves into white against light backgrounds.</p>
+          </div>
+        </div>
+        <button type="button" class="switch-dark-btn" onclick="toggleTheme(true)" data-cursor-hover="true">
+          <span>Switch to Dark Mode 🌙</span>
+        </button>
       </div>
 
       <div class="lens-sandbox">
@@ -1147,7 +1247,7 @@
           MOVE YOUR CURSOR ACROSS THIS TYPOGRAPHY
         </h3>
         <p class="sandbox-paragraph">
-          Notice how the letters invert and remain vividly readable right through the liquid ink! In <strong>Difference mode</strong>, the droplet layer calculates <code>abs(pixel - cursorColor)</code>. Against dark text, it produces high-contrast luminous highlights, creating an optical magnifying lens that never obscures underlying content.
+          Notice how the letters invert and remain vividly readable right through the liquid ink! In <strong>Difference mode</strong>, the droplet layer calculates <code>abs(pixel - cursorColor)</code> for high-contrast typography reveal. In <strong>Normal mode</strong>, it renders as solid viscous ink. In <strong>Screen mode</strong>, additive lighting produces an electric luminous glow — <em>best viewed in Dark Mode</em> because additive blending dissolves against light/white surfaces.
         </p>
 
         <div class="sandbox-quote-card">
@@ -1366,7 +1466,7 @@
               <td><code>mixBlendMode</code></td>
               <td>String</td>
               <td><code>'difference'</code></td>
-              <td>Blend mode: <code>'difference'</code> (Mendieta text-reveal lens), <code>'normal'</code>, <code>'screen'</code>.</td>
+              <td>Blend mode: <code>'difference'</code> (Mendieta text-reveal lens), <code>'normal'</code> (solid ink), <code>'screen'</code> (additive luminous glow — <strong>best used in Dark Mode</strong>).</td>
             </tr>
             <tr>
               <td><code>multiCheckpoints</code></td>
@@ -1420,7 +1520,7 @@
               <td><code>setBlendMode(mode)</code></td>
               <td>Method</td>
               <td>—</td>
-              <td>Dynamically changes cursor blend mode (<code>'difference'</code> | <code>'normal'</code> | <code>'screen'</code>).</td>
+              <td>Dynamically changes cursor blend mode (<code>'difference'</code> | <code>'normal'</code> | <code>'screen'</code> — <em>use screen in dark mode for optimal glow</em>).</td>
             </tr>
             <tr>
               <td><code>reportBug(note)</code></td>
@@ -1763,6 +1863,8 @@ Please adapt this for my site structure.`
       if (mode === 'difference') document.getElementById('pillDiff').classList.add('active');
       if (mode === 'normal') document.getElementById('pillNormal').classList.add('active');
       if (mode === 'screen') document.getElementById('pillScreen').classList.add('active');
+
+      checkScreenNotice();
     }
 
     function triggerBugReport() {
@@ -1879,13 +1981,21 @@ Please adapt this for my site structure.`
       });
     }
 
-    function setupThemeToggle() {
-      const btn = document.getElementById('themeToggleBtn');
+    function toggleTheme(forceDark) {
+      if (typeof forceDark === 'boolean') {
+        if (forceDark) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      } else {
+        document.body.classList.toggle('dark-mode');
+      }
+
+      const isDark = document.body.classList.contains('dark-mode');
       const icon = document.getElementById('themeIcon');
       const label = document.getElementById('themeLabel');
-
-      btn.addEventListener('click', () => {
-        const isDark = document.body.classList.toggle('dark-mode');
+      if (icon && label) {
         if (isDark) {
           icon.textContent = '☀️';
           label.textContent = 'Light';
@@ -1893,7 +2003,29 @@ Please adapt this for my site structure.`
           icon.textContent = '🌙';
           label.textContent = 'Dark';
         }
-      });
+      }
+      checkScreenNotice();
+    }
+
+    function checkScreenNotice() {
+      const notice = document.getElementById('screenNotice');
+      if (!notice) return;
+      const isScreenActive = document.getElementById('pillScreen') && document.getElementById('pillScreen').classList.contains('active');
+      const isLightMode = !document.body.classList.contains('dark-mode');
+      if (isScreenActive && isLightMode) {
+        notice.style.display = 'flex';
+      } else {
+        notice.style.display = 'none';
+      }
+    }
+
+    function setupThemeToggle() {
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          toggleTheme();
+        });
+      }
     }
   </script>
 </body>

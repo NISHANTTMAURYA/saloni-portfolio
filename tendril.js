@@ -79,16 +79,26 @@
     dripTrail: true,            // Fast falling drops shed trailing droplets
 
     // 2-Stage Triple-Tap Anchor & Multi-Waypoint Mechanics
-    anchorMode: 'multi',        // 'multi' (multi-pin weaving) | 'single' (1 pin only; new breaks old) | 'off' (disabled)
+    anchorMode: 'multi',        // 'multi' (multi-pin weaving) | 'single' (1 pin only; old pin glides to the new spot) | 'off' (disabled)
     tripleTapAnchor: true,      // Triple-Tap = Toggle Anchor / Sever & Drop
     tripleTapMaxInterval: 480,  // Maximum milliseconds across 3 taps
     multiCheckpoints: true,     // Single click while in Anchor mode drops additional pins (in 'multi' mode)
+    anchorFollowStiffness: 0.05,// 'single' mode: spring pull of the old pin toward the new spot (per frame)
+    anchorFollowDamping: 0.82,  // 'single' mode: spring damping (lower = more liquid overshoot)
+
+    // Anchored Rope Physics (Verlet, inextensible, length-limited, water-like drag)
+    ropeLength: 0,              // Max rope length in px (0 = auto ≈ 88% of viewport diagonal)
+    ropeSlack: 0.18,            // Extra length (fraction of chord) the rope has while it's NOT at full length
+    ropeMinSlack: 26,           // Minimum slack (px) so short ropes still droop
+    ropeGravity: 0.32,          // Downward pull on anchored rope joints (px/frame²)
+    ropeDamping: 0.955,         // Velocity retention per frame (lower = thicker, more water-like)
+    ropeIterations: 14,         // Constraint solver passes (higher = less stretchy)
     severedRopeGravity: 0.65,   // Gravitational downward pull for detached falling ropes
     severedRopeDrag: 0.985,     // Air resistance for detached ropes
 
     // System
     hideNativeCursor: true,     // Automatically hides native OS mouse cursor
-    preventTextSelectOnTap: true,// Clears browser selection so rapid taps don't highlight text
+    preventTextSelectOnTap: false,// When false (default), native multi-tap and triple-tap word/paragraph selection works
     maxParticles: 130,          // Pre-allocated particle pool size
     maxSeveredRopes: 5,         // Maximum simultaneous falling severed ropes
     zIndex: 999999,             // Layer priority
@@ -206,8 +216,8 @@
     window.addEventListener('touchstart', this._touchDown, { passive: true });
     window.addEventListener('touchmove', this._touchMove, { passive: true });
     window.addEventListener('touchend', this._up, { passive: true });
-    window.addEventListener('mousedown', this._onMouseDown, { passive: false });
-    window.addEventListener('selectstart', this._onSelectStart, { passive: false });
+    window.addEventListener('mousedown', this._onMouseDown, { passive: false, capture: true });
+    window.addEventListener('selectstart', this._onSelectStart, { passive: false, capture: true });
     window.addEventListener('resize', this._resize, { passive: true });
     document.addEventListener('pointerover', this._over, { passive: true });
     document.addEventListener('pointerout', this._out, { passive: true });
@@ -423,13 +433,44 @@
     return false;
   };
 
+  /**
+   * Temporarily disables text selection page-wide (used from the 2nd rapid tap onward,
+   * so double/triple-click word/paragraph highlighting can never kick in).
+   * Normal single click + drag selection stays untouched.
+   */
+  Tendril.prototype._lockSelection = function (ms) {
+    if (!this.opts.preventTextSelectOnTap) return;
+    if (!this.selLockStyleEl) {
+      this.selLockStyleEl = document.createElement('style');
+      this.selLockStyleEl.id = this.id + '_nosel';
+      this.selLockStyleEl.textContent =
+        'html.' + this.id + '_nosel, html.' + this.id + '_nosel * {' +
+        '-webkit-user-select: none !important; user-select: none !important;' +
+        '-webkit-touch-callout: none !important; }';
+      document.head.appendChild(this.selLockStyleEl);
+    }
+    document.documentElement.classList.add(this.id + '_nosel');
+    this._clearSelection();
+    clearTimeout(this._selLockTimer);
+    var self = this;
+    this._selLockTimer = setTimeout(function () {
+      self._unlockSelection();
+    }, ms || 700);
+  };
+
+  Tendril.prototype._unlockSelection = function () {
+    clearTimeout(this._selLockTimer);
+    this._selLockTimer = null;
+    document.documentElement.classList.remove(this.id + '_nosel');
+  };
+
   Tendril.prototype._onMouseDown = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
     // Detail >= 2 is double-click or triple-click: prevent browser from highlighting words/paragraphs!
     if (e.detail >= 2) {
       if (e.cancelable) e.preventDefault();
-      this._clearSelection();
+      this._lockSelection();
     }
   };
 
@@ -437,8 +478,7 @@
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
     var now = performance.now();
-    var recentTap = this.tapHistory && this.tapHistory.length > 0 &&
-      (now - this.tapHistory[this.tapHistory.length - 1].time < 600);
+    var recentTap = this._lastTapTime && (now - this._lastTapTime < 600);
     // Block selection whenever rapid-tapping for anchors or actively anchored
     if (recentTap || this.isAnchored) {
       if (e.cancelable) e.preventDefault();
@@ -453,10 +493,13 @@
     var isInteractive = this._isInteractive(e.target);
     if (isInteractive) return;
 
-    if (e.detail >= 2) {
-      if (e.cancelable) e.preventDefault();
-      this._clearSelection();
+    // Rapid repeat tap (2nd / 3rd of a multi-tap) → lock selection BEFORE the browser's
+    // mousedown runs its word/paragraph selection. (Do NOT preventDefault pointerdown:
+    // that suppresses the compat mousedown but does not stop selection.)
+    if (this._lastTapTime && now - this._lastTapTime < this.opts.tripleTapMaxInterval) {
+      this._lockSelection();
     }
+    this._lastTapTime = now;
 
     // If anchor mode is completely 'off', skip all anchoring logic and do normal splash/spill
     if (this.opts.anchorMode === 'off') {
@@ -483,8 +526,7 @@
             clearTimeout(this._singleClickTimer);
             this._singleClickTimer = null;
           }
-          if (e.cancelable) e.preventDefault();
-          this._clearSelection();
+          this._lockSelection(900);
 
           if (!this.isAnchored) {
             // Triple-Tap 1: Start Anchor Mode (Plant 1st Pin)
@@ -532,6 +574,7 @@
 
   Tendril.prototype._up = function () {
     this.headScale = 1;
+    if (this._selLockTimer) this._clearSelection();
     this._wake();
   };
 
@@ -578,7 +621,7 @@
   /* ---------------- Multi-Checkpoint Architecture ---------------- */
 
   /**
-   * Set Anchor Mode: 'multi' (multi-pin weaving) | 'single' (1 pin only; new breaks old) | 'off' (disabled)
+   * Set Anchor Mode: 'multi' (multi-pin weaving) | 'single' (1 pin only; old pin glides to new spot) | 'off' (disabled)
    */
   Tendril.prototype.setAnchorMode = function (mode) {
     if (mode !== 'multi' && mode !== 'single' && mode !== 'off') {
@@ -586,14 +629,28 @@
       return;
     }
     this.opts.anchorMode = mode;
+    this.tapHistory.length = 0;
+    if (this._singleClickTimer) {
+      clearTimeout(this._singleClickTimer);
+      this._singleClickTimer = null;
+    }
 
     if (mode === 'off') {
+      // Turning anchoring off simply lets go of the rope: it falls away naturally
       if (this.isAnchored) {
-        this.clearCheckpoints();
+        this.releaseAllAndDrop();
       }
     } else if (mode === 'single') {
-      // In single mode, only 1 checkpoint is allowed: retain only the latest pin and break older pins
+      // Only 1 pin allowed: keep the latest pin + live span, drop the older woven spans as a falling rope
       if (this.checkpoints.length > 1) {
+        var oldPts = [];
+        for (var k = this.completedSpans.length - 1; k >= 0; k--) {
+          var span = this.completedSpans[k];
+          for (var j = (k === this.completedSpans.length - 1 ? 0 : 1); j < span.length; j++) {
+            oldPts.push(span[j]);
+          }
+        }
+        if (oldPts.length > 1) this._spawnSeveredRope(oldPts);
         while (this.checkpoints.length > 1) {
           var old = this.checkpoints.shift();
           this._splash(old.x, old.y);
@@ -622,7 +679,7 @@
 
   /**
    * Add an anchor checkpoint / pin at (x, y)
-   * Supports 'multi' (chains waypoints), 'single' (breaks old anchor and moves to new), and 'off'
+   * Supports 'multi' (chains waypoints), 'single' (old pin glides to the new spot, rope stays attached), and 'off'
    */
   Tendril.prototype.addCheckpoint = function (x, y) {
     if (this.opts.anchorMode === 'off') return;
@@ -635,17 +692,38 @@
     // --- SINGLE ANCHOR MODE LOGIC ---
     if (this.opts.anchorMode === 'single') {
       if (!wasFree && this.checkpoints.length > 0) {
-        // Break the OLD anchor pin!
-        var oldCP = this.checkpoints[0];
-        this._splash(oldCP.x, oldCP.y);
-        this.spill(oldCP.x, oldCP.y, { count: 12, speed: 4.5 });
-        if (oldCP.el && oldCP.el.parentNode) {
-          oldCP.el.parentNode.removeChild(oldCP.el);
+        // Keep only the newest pin, then send it gliding to the new spot WITHOUT breaking the rope
+        while (this.checkpoints.length > 1) {
+          var extra = this.checkpoints.shift();
+          if (extra.el && extra.el.parentNode) extra.el.parentNode.removeChild(extra.el);
         }
-        this.checkpoints.length = 0;
         this.completedSpans.length = 0;
+
+        var cp = this.checkpoints[0];
+        cp.tx = x;
+        cp.ty = y;
+        if (cp.vx === undefined) { cp.vx = 0; cp.vy = 0; }
+        this.anchor.x = x;
+        this.anchor.y = y;
+        this._splash(x, y);
+
+        if (typeof this.onAnchorChange === 'function') {
+          try {
+            this.onAnchorChange(true, {
+              mode: 'single',
+              count: this.checkpoints.length,
+              checkpoints: this.checkpoints,
+              moved: true
+            });
+          } catch (err) {
+            console.warn(err);
+          }
+        }
+        this._wake();
+        return;
       }
 
+      // First pin in single mode
       this.isAnchored = true;
       this.anchor.x = x;
       this.anchor.y = y;
@@ -867,6 +945,33 @@
       }
     }
 
+    this._spawnSeveredRope(allPts);
+
+    // Liquid bursts at cursor head and every single active checkpoint location
+    this._splash(this.target.x, this.target.y);
+    for (var cpIdx = 0; cpIdx < this.checkpoints.length; cpIdx++) {
+      this._splash(this.checkpoints[cpIdx].x, this.checkpoints[cpIdx].y);
+    }
+    this.spill(this.target.x, this.target.y, { count: 14, speed: 5.0 });
+
+    // Cursor instantly resets to mouse position with fresh free tail
+    for (var m = 0; m < this.points.length; m++) {
+      this.points[m].x = this.target.x;
+      this.points[m].y = this.target.y;
+      this.points[m].px = this.target.x;
+      this.points[m].py = this.target.y;
+    }
+
+    if (this.severedRopes.length > this.opts.maxSeveredRopes) {
+      var oldest = this.severedRopes.shift();
+      this._destroySeveredRope(oldest);
+    }
+  };
+
+  /**
+   * Turns an array of rope points into an independent falling Verlet rope (keeps shape + momentum)
+   */
+  Tendril.prototype._spawnSeveredRope = function (allPts) {
     var severedPts = [];
     var segRestLens = [];
     for (var i = 0; i < allPts.length; i++) {
@@ -907,7 +1012,7 @@
     }
     this.severedGroup.appendChild(nodeGroup);
 
-    var severedRope = {
+    this.severedRopes.push({
       pts: severedPts,
       path: path,
       nodeGroup: nodeGroup,
@@ -916,29 +1021,12 @@
       segRestLen: segRestLens[0] || 14,
       life: 1.0,
       active: true
-    };
-
-    this.severedRopes.push(severedRope);
-
-    // Liquid bursts at cursor head and every single active checkpoint location
-    this._splash(this.target.x, this.target.y);
-    for (var cpIdx = 0; cpIdx < this.checkpoints.length; cpIdx++) {
-      this._splash(this.checkpoints[cpIdx].x, this.checkpoints[cpIdx].y);
-    }
-    this.spill(this.target.x, this.target.y, { count: 14, speed: 5.0 });
-
-    // Cursor instantly resets to mouse position with fresh free tail
-    for (var m = 0; m < this.points.length; m++) {
-      this.points[m].x = this.target.x;
-      this.points[m].y = this.target.y;
-      this.points[m].px = this.target.x;
-      this.points[m].py = this.target.y;
-    }
+    });
 
     if (this.severedRopes.length > this.opts.maxSeveredRopes) {
-      var oldest = this.severedRopes.shift();
-      this._destroySeveredRope(oldest);
+      this._destroySeveredRope(this.severedRopes.shift());
     }
+    this._wake();
   };
 
   Tendril.prototype._destroySeveredRope = function (sr) {
@@ -1077,112 +1165,55 @@
           energy += Math.abs(dx) + Math.abs(dy);
         }
       } else {
-        // --- LIQUID ELASTIC ANCHOR PHYSICS (COHESIVE TENSION & SLACK ACROSS ALL SPANS) ---
+        // --- REAL ROPE PHYSICS BETWEEN ANCHORS (Verlet + inextensible length + water-like drag) ---
+        // The rope has a finite length. While the pins/cursor are closer together than that length
+        // the rope is LOOSE: every joint swings freely under gravity and sags into a natural catenary.
+        // As the total distance approaches the rope length, the slack runs out and ALL spans
+        // pull TIGHT together (slack is shared across spans, like a cord threaded through rings).
         var numPins = this.checkpoints.length;
         if (numPins > 0) {
-          var latestCP = this.checkpoints[numPins - 1];
           var wobble = this.idle && o.idleWobble;
 
-          var D_diag = Math.hypot(this.viewW, this.viewH);
-          var L_max = Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+          // 'single' mode: the pin glides to its new spot on a damped spring (rope stays attached)
+          energy += this._updatePinFollow(f);
 
-          // Calculate total chord distance across all active spans
+          var latestCP = this.checkpoints[numPins - 1];
+          var L_rope = this._ropeLength();
+
+          // Straight-line distances of every span
+          var spanChords = this._spanChords || (this._spanChords = []);
+          spanChords.length = 0;
           var totalChord = 0;
           for (var c = 0; c < this.completedSpans.length; c++) {
             var pA = this.checkpoints[c];
             var pB = this.checkpoints[c + 1];
-            totalChord += Math.hypot(pB.x - pA.x, pB.y - pA.y);
+            var ch = Math.hypot(pB.x - pA.x, pB.y - pA.y);
+            spanChords.push(ch);
+            totalChord += ch;
           }
           var activeChord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
           totalChord += activeChord;
 
-          // Elastic stretch & slack ratio (0 = maximum tight stretch, 1 = completely loose slack!)
-          var stretchRatio = Math.min(1.0, totalChord / L_max);
-          var slack = Math.max(0.0, 1.0 - stretchRatio); // 1.0 when close/loose, 0.0 when stretched tight!
+          // Available slack: generous while far from full length, shrinking to ZERO at full length
+          var slackCap = Math.max(o.ropeMinSlack, totalChord * o.ropeSlack);
+          var slackLen = Math.max(0, Math.min(L_rope - totalChord, slackCap));
+          var slackRatio = totalChord > 1 ? slackLen / totalChord : 0;
+          // 0 = completely loose, 1 = pulled taut (exposed for styling / callbacks)
+          this.ropeTension = slackCap > 0 ? 1 - slackLen / slackCap : 1;
 
-          // 1. Forward liquid follower wave along the active span (IDENTICAL to free cursor mode!)
-          for (var i = 1; i < n; i++) {
-            var p = pts[i], q = pts[i - 1];
-            p.px = p.x; p.py = p.y;
-            var tx = q.x, ty = q.y, k = a;
-            if (wobble) {
-              p.ax += o.idleSpeed * f * (1 + i * 0.08);
-              p.ay += o.idleSpeed * f * (1 + i * 0.08);
-              var amp = o.idleAmplitude * (i / n) * (0.3 + 0.7 * slack);
-              tx += Math.sin(p.ax) * amp;
-              ty += Math.cos(p.ay) * amp;
-              k = a * 0.72;
-            }
-            var dx = (tx - p.x) * k;
-            var dy = (ty - p.y) * k;
-            p.x += dx;
-            p.y += dy;
-            energy += Math.abs(dx) + Math.abs(dy);
-          }
+          // Active span: cursor head  ->  newest pin
+          energy += this._simulateSpan(pts, h, latestCP,
+            activeChord * (1 + slackRatio) + (totalChord > 1 ? 0 : o.ropeMinSlack), f, wobble);
 
-          // 2. Smooth anchor boundary correction
-          var errX = pts[n - 1].x - latestCP.x;
-          var errY = pts[n - 1].y - latestCP.y;
-
-          // Active span sag scales with slack: when tight (slack=0) -> straight taut cord!
-          // When loose (slack > 0) -> natural gravitational liquid droop!
-          var activeSag = Math.min(30, activeChord * 0.12) * slack;
-
-          for (var i = 1; i < n; i++) {
-            var s = i / (n - 1);
-            var weight = Math.pow(s, 1.25);
-            pts[i].x -= errX * weight;
-            pts[i].y -= errY * weight;
-
-            // Organic catenary droop (tightens when reaching length, sags when loose)
-            if (i < n - 1) {
-              pts[i].y += Math.sin(s * Math.PI) * activeSag * 0.22;
-            }
-          }
-          pts[n - 1].x = latestCP.x;
-          pts[n - 1].y = latestCP.y;
-
-          // 3. Completed spans: DYNAMIC TIGHTENING & LOOSENING (Physical Slack / Tension Coupling)
-          // When the rope is pulled towards its length (slack -> 0), ALL spans tighten and straighten!
-          // When the rope is loose (slack > 0), all spans loosen and droop downward with gravity!
-          if (this.completedSpans.length > 0) {
-            for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
-              var spanPts = this.completedSpans[cIdx];
-              var pinTail = this.checkpoints[cIdx];
-              var pinHead = this.checkpoints[cIdx + 1];
-              var sChord = Math.hypot(pinHead.x - pinTail.x, pinHead.y - pinTail.y);
-
-              // Gravitational sag for this span, directly governed by global slack!
-              var spanSag = Math.min(42, sChord * 0.18) * slack;
-              var spanLen = spanPts.length;
-
-              spanPts[0].x = pinHead.x;
-              spanPts[0].y = pinHead.y;
-              spanPts[spanLen - 1].x = pinTail.x;
-              spanPts[spanLen - 1].y = pinTail.y;
-
-              for (var m = 1; m < spanLen - 1; m++) {
-                var u = m / (spanLen - 1);
-                // Straight chord baseline between the two pinned anchors
-                var baseX = pinHead.x * (1 - u) + pinTail.x * u;
-                var baseY = pinHead.y * (1 - u) + pinTail.y * u;
-
-                // Target position with dynamic gravitational sag
-                var targetY = baseY + Math.sin(u * Math.PI) * spanSag;
-                var targetX = baseX;
-
-                // Living harmonic breathing when stationary
-                if (wobble && slack > 0.08) {
-                  spanPts[m].ax += o.idleSpeed * f * 0.5;
-                  targetY += Math.sin(spanPts[m].ax) * o.idleAmplitude * Math.sin(u * Math.PI) * 0.08 * slack;
-                }
-
-                // Smooth physical relaxation to target (tightens when pulled, loosens when released)
-                spanPts[m].x += (targetX - spanPts[m].x) * (a * 0.35);
-                spanPts[m].y += (targetY - spanPts[m].y) * (a * 0.35);
-                energy += Math.abs(targetX - spanPts[m].x) + Math.abs(targetY - spanPts[m].y);
-              }
-            }
+          // Completed spans: pin[c+1]  ->  pin[c]
+          for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
+            energy += this._simulateSpan(
+              this.completedSpans[cIdx],
+              this.checkpoints[cIdx + 1],
+              this.checkpoints[cIdx],
+              spanChords[cIdx] * (1 + slackRatio),
+              f, wobble
+            );
           }
         }
       }
@@ -1206,6 +1237,110 @@
     } else {
       this.running = false;
     }
+  };
+
+  /**
+   * Maximum physical rope length (px)
+   */
+  Tendril.prototype._ropeLength = function () {
+    if (this.opts.ropeLength > 0) return this.opts.ropeLength;
+    var D_diag = Math.hypot(this.viewW, this.viewH);
+    return Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+  };
+
+  /**
+   * One Verlet step for a rope span pinned at both ends.
+   *  - arr[0] is pinned to A, arr[last] is pinned to B
+   *  - interior joints get momentum (with water-like drag) + gravity
+   *  - distance constraints keep each segment at length/(segments) so the rope
+   *    hangs loose when there is slack and straightens taut when there is none
+   * Returns kinetic energy (for sleep detection).
+   */
+  Tendril.prototype._simulateSpan = function (arr, A, B, length, f, wobble) {
+    var o = this.opts;
+    var len = arr.length;
+    if (len < 2) return 0;
+    var segs = len - 1;
+    var rest = Math.max(0.25, length / segs);
+    var damp = Math.pow(o.ropeDamping, f);
+    var g = o.ropeGravity * f * f;
+    var maxV = 60;
+    var looseness = 1 - (this.ropeTension || 0);
+    var energy = 0;
+
+    var first = arr[0], last = arr[segs];
+    first.x = A.x; first.y = A.y;
+    last.x = B.x; last.y = B.y;
+    last.px = B.x; last.py = B.y;
+
+    // 1. Integrate (momentum + drag + gravity)
+    for (var i = 1; i < segs; i++) {
+      var p = arr[i];
+      var vx = (p.x - p.px) * damp;
+      var vy = (p.y - p.py) * damp;
+      if (vx > maxV) vx = maxV; else if (vx < -maxV) vx = -maxV;
+      if (vy > maxV) vy = maxV; else if (vy < -maxV) vy = -maxV;
+      p.px = p.x; p.py = p.y;
+      p.x += vx;
+      p.y += vy + g;
+
+      // Gentle underwater current while idle (fades out as the rope pulls taut)
+      if (wobble && looseness > 0.05) {
+        p.ax = (p.ax || 0) + o.idleSpeed * f;
+        p.x += Math.sin(p.ax + i * 0.55) * o.idleAmplitude * 0.018 * f * looseness;
+      }
+      energy += Math.abs(vx) + Math.abs(vy);
+    }
+
+    // 2. Satisfy length constraints (alternating sweep direction for faster convergence)
+    var iters = o.ropeIterations;
+    for (var it = 0; it < iters; it++) {
+      var fwd = (it & 1) === 0;
+      for (var s = 0; s < segs; s++) {
+        var j = fwd ? s : segs - 1 - s;
+        var a = arr[j], b = arr[j + 1];
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-6) continue;
+        var wa = j === 0 ? 0 : 1;
+        var wb = j + 1 === segs ? 0 : 1;
+        var wsum = wa + wb;
+        if (!wsum) continue;
+        var diff = (d - rest) / (d * wsum);
+        a.x += dx * diff * wa; a.y += dy * diff * wa;
+        b.x -= dx * diff * wb; b.y -= dy * diff * wb;
+      }
+    }
+
+    return energy;
+  };
+
+  /**
+   * 'single' mode: moves a retargeted pin toward its new spot on a damped (slightly liquid) spring
+   */
+  Tendril.prototype._updatePinFollow = function (f) {
+    var o = this.opts, energy = 0;
+    for (var i = 0; i < this.checkpoints.length; i++) {
+      var cp = this.checkpoints[i];
+      if (cp.tx === undefined) continue;
+      var d = Math.pow(o.anchorFollowDamping, f);
+      cp.vx = (cp.vx + (cp.tx - cp.x) * o.anchorFollowStiffness * f) * d;
+      cp.vy = (cp.vy + (cp.ty - cp.y) * o.anchorFollowStiffness * f) * d;
+      cp.x += cp.vx * f;
+      cp.y += cp.vy * f;
+      if (Math.abs(cp.tx - cp.x) < 0.3 && Math.abs(cp.ty - cp.y) < 0.3 &&
+          Math.abs(cp.vx) + Math.abs(cp.vy) < 0.2) {
+        cp.x = cp.tx; cp.y = cp.ty;
+        cp.vx = 0; cp.vy = 0;
+        cp.tx = undefined; cp.ty = undefined;
+      }
+      if (cp.el) {
+        cp.el.setAttribute('cx', r1(cp.x));
+        cp.el.setAttribute('cy', r1(cp.y));
+      }
+      energy += Math.abs(cp.vx) + Math.abs(cp.vy);
+    }
+    return energy;
   };
 
   Tendril.prototype._drawRope = function () {
@@ -1490,14 +1625,15 @@
     window.removeEventListener('touchstart', this._touchDown);
     window.removeEventListener('touchmove', this._touchMove);
     window.removeEventListener('touchend', this._up);
-    window.removeEventListener('mousedown', this._onMouseDown);
-    window.removeEventListener('selectstart', this._onSelectStart);
+    window.removeEventListener('mousedown', this._onMouseDown, { capture: true });
+    window.removeEventListener('selectstart', this._onSelectStart, { capture: true });
     window.removeEventListener('resize', this._resize);
     document.removeEventListener('pointerover', this._over);
     document.removeEventListener('pointerout', this._out);
     document.removeEventListener('visibilitychange', this._vis);
 
     this._removeHideNativeCursor();
+    this._unlockSelection();
 
     if (this._singleClickTimer) {
       clearTimeout(this._singleClickTimer);
