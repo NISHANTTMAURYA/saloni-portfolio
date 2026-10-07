@@ -49,7 +49,7 @@
     mixBlendMode: 'difference', // Mendieta's iconic text-inverting lens
 
     // Rope kinematics
-    segments: 22,               // Number of physical joints along the cord
+    segments: 26,               // Number of physical joints along the cord
     segTau: 36,                 // Per-segment lag in ms (frame-rate independent)
     headRadius: 14,             // Cursor pointer head radius (px)
     tailRadius: 4,              // Tail tip radius (px)
@@ -78,9 +78,10 @@
     gravity: 0.38,              // Gravitational acceleration (px/frame²)
     dripTrail: true,            // Fast falling drops shed trailing droplets
 
-    // 2-Stage Triple-Tap Anchor & Sever Mechanics
-    tripleTapAnchor: true,      // 1st Triple-Tap = Anchor tail; 2nd Triple-Tap = Sever & Drop
-    tripleTapMaxInterval: 380,  // Maximum milliseconds between taps
+    // 2-Stage Triple-Tap Anchor & Multi-Waypoint Mechanics
+    tripleTapAnchor: true,      // Triple-Tap = Toggle Anchor / Sever & Drop
+    tripleTapMaxInterval: 480,  // Maximum milliseconds across 3 taps
+    multiCheckpoints: true,     // Single click while in Anchor mode drops additional pins!
     severedRopeGravity: 0.65,   // Gravitational downward pull for detached falling ropes
     severedRopeDrag: 0.985,     // Air resistance for detached ropes
 
@@ -152,10 +153,13 @@
     this.hidden = false;
     this.activeCount = 0;
 
-    // 2-Stage Triple-Tap Anchor State
+    // Anchor & Multi-Checkpoint State
     this.isAnchored = false;
     this.anchor = { x: 0, y: 0 };
+    this.checkpoints = [];
+    this.completedSpans = [];
     this.tapHistory = [];
+    this._singleClickTimer = null;
     this.severedRopes = [];
 
     // Bound handlers
@@ -256,7 +260,7 @@
     svg.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;';
 
     var blurVal = o.gooeyBlur;
-    var matrixOffset = Math.max(-18, Math.min(-10, -18 + (blurVal * 0.5)));
+    var matrixOffset = Math.max(-13, Math.min(-9, -15 + (blurVal * 0.5)));
 
     svg.innerHTML =
       '<defs>' +
@@ -294,18 +298,13 @@
     this.liquidGroup = document.createElementNS(NS, 'g');
     this.liquidGroup.setAttribute('fill', o.color);
 
-    // Layer 5: Clean single Anchor Node Pin
-    this.anchorNode = document.createElementNS(NS, 'circle');
-    this.anchorNode.setAttribute('r', '0');
-    this.anchorNode.setAttribute('fill', o.color);
-    this.anchorNode.setAttribute('stroke', '#ffffff');
-    this.anchorNode.setAttribute('stroke-width', '2');
-    this.anchorNode.style.display = 'none';
+    // Layer 5: Visual Checkpoint / Anchor Pins Group
+    this.checkpointGroup = document.createElementNS(NS, 'g');
 
     g.appendChild(rope);
     g.appendChild(this.nodeGroup);
     g.appendChild(this.liquidGroup);
-    g.appendChild(this.anchorNode);
+    g.appendChild(this.checkpointGroup);
 
     svg.appendChild(g);
     wrap.appendChild(svg);
@@ -322,6 +321,7 @@
     var o = this.opts, n = o.segments;
     this.points = [];
     this.nodes = [];
+    this.completedSpans = [];
 
     while (this.nodeGroup.firstChild) {
       this.nodeGroup.removeChild(this.nodeGroup.firstChild);
@@ -400,19 +400,12 @@
 
   Tendril.prototype._clearSelection = function () {
     try {
-      if (window.getSelection) {
-        var sel = window.getSelection();
-        if (sel && sel.removeAllRanges) sel.removeAllRanges();
+      var sel = window.getSelection ? window.getSelection() : null;
+      if (sel) {
+        if (sel.empty) sel.empty();
+        else if (sel.removeAllRanges) sel.removeAllRanges();
       }
-    } catch (err) {}
-    setTimeout(function () {
-      try {
-        if (window.getSelection) {
-          var s2 = window.getSelection();
-          if (s2 && s2.removeAllRanges) s2.removeAllRanges();
-        }
-      } catch (e) {}
-    }, 25);
+    } catch (e) {}
   };
 
   Tendril.prototype._isInteractive = function (t) {
@@ -427,7 +420,7 @@
   Tendril.prototype._onMouseDown = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
-    if (e.detail > 1) {
+    if (e.detail > 2) {
       if (e.cancelable) e.preventDefault();
       this._clearSelection();
     }
@@ -436,9 +429,9 @@
   Tendril.prototype._onSelectStart = function (e) {
     if (!this.opts.preventTextSelectOnTap) return;
     if (this._isInteractive(e.target)) return;
-    if (this.tapHistory && this.tapHistory.length > 0) {
+    if (this.tapHistory && this.tapHistory.length > 1) {
       var last = this.tapHistory[this.tapHistory.length - 1];
-      if (performance.now() - last.time < 450) {
+      if (performance.now() - last.time < 350) {
         if (e.cancelable) e.preventDefault();
       }
     }
@@ -449,12 +442,7 @@
     var x = e.clientX, y = e.clientY;
     var now = performance.now();
     var isInteractive = this._isInteractive(e.target);
-
-    // Prevent text selection when rapid taps are occurring on text, but NEVER block interactive buttons!
-    if (this.tapHistory.length > 0 && (now - this.tapHistory[this.tapHistory.length - 1].time) < 420) {
-      this._clearSelection();
-      if (!isInteractive && e.cancelable) e.preventDefault();
-    }
+    if (isInteractive) return;
 
     if (this.opts.tripleTapAnchor) {
       this.tapHistory.push({ time: now, x: x, y: y });
@@ -466,21 +454,47 @@
         var timeSpan = t2.time - t0.time;
         var dist = Math.hypot(t2.x - t0.x, t2.y - t0.y);
 
-        if (timeSpan <= this.opts.tripleTapMaxInterval && dist < 60) {
+        if (timeSpan <= this.opts.tripleTapMaxInterval && dist < 75) {
           this.tapHistory.length = 0;
+          if (this._singleClickTimer) {
+            clearTimeout(this._singleClickTimer);
+            this._singleClickTimer = null;
+          }
           this._clearSelection();
 
-          // 2-Stage Toggle: Triple-Tap 1 = Anchor tail & stretch cord; Triple-Tap 2 = Sever cord into falling rope!
-          this.toggleAnchor(x, y);
+          if (!this.isAnchored) {
+            // Triple-Tap 1: Start Anchor Mode (Plant 1st Pin)
+            this.addCheckpoint(x, y);
+          } else {
+            // Triple-Tap 2: Final Release! Sever all checkpoints & drop physics rope
+            this.releaseAllAndDrop();
+          }
 
-          if (!isInteractive && e.cancelable) e.preventDefault();
+          if (e.cancelable) e.preventDefault();
           this._wake();
           return;
         }
       }
     }
 
-    // Normal Click: Splash & Spill (Single clicks do NOT add waypoints!)
+    // While already in Anchor mode, single click adds an additional anchor point!
+    if (this.isAnchored && this.opts.multiCheckpoints) {
+      if (this._singleClickTimer) {
+        clearTimeout(this._singleClickTimer);
+        this._singleClickTimer = null;
+      }
+      var self = this;
+      this._singleClickTimer = setTimeout(function () {
+        self._singleClickTimer = null;
+        if (self.isAnchored) {
+          self.addCheckpoint(x, y);
+          self._wake();
+        }
+      }, 240);
+      return;
+    }
+
+    // Normal Click: Splash & Spill
     if (this.opts.splashOnClick) this._splash(x, y);
     if (this.opts.spillOnClick) this.spill(x, y);
     this.headScale = this.targetHeadScale * 0.65;
@@ -532,59 +546,92 @@
     this.viewW = window.innerWidth;
   };
 
-  /* ---------------- 2-Stage Triple-Tap Anchor & Sever Mechanics ---------------- */
+  /* ---------------- Multi-Checkpoint Architecture ---------------- */
 
   /**
-   * Toggle Anchor:
-   *  - Stage 1 (if free): Pins the tail at (x, y) with a clean anchor node. The cord stretches smoothly across screen.
-   *  - Stage 2 (if anchored): Severs the stretched cord into an independent physical falling rope with Verlet gravity!
+   * Add an anchor checkpoint / pin at (x, y)
+   * The liquid rope threads through all checkpoints before connecting to the cursor!
    */
-  Tendril.prototype.toggleAnchor = function (x, y) {
+  Tendril.prototype.addCheckpoint = function (x, y) {
     x = typeof x === 'number' ? x : this.target.x;
     y = typeof y === 'number' ? y : this.target.y;
 
-    if (!this.isAnchored) {
-      // Stage 1: Anchor Tail & Stretch Cord
-      this.isAnchored = true;
-      this.anchor.x = x;
-      this.anchor.y = y;
+    var wasFree = !this.isAnchored || this.checkpoints.length === 0;
+    this.isAnchored = true;
+    this.anchor.x = x;
+    this.anchor.y = y;
 
+    // SVG Pin Circle
+    var circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', r1(x));
+    circle.setAttribute('cy', r1(y));
+    circle.setAttribute('r', (this.opts.headRadius * 1.2).toFixed(1));
+    circle.setAttribute('fill', this.opts.color);
+    circle.setAttribute('stroke', '#ffffff');
+    circle.setAttribute('stroke-width', '2.5');
+    this.checkpointGroup.appendChild(circle);
+
+    this.checkpoints.push({ x: x, y: y, el: circle });
+
+    // When first entering anchor mode, initialize intermediate points
+    if (wasFree) {
+      this.completedSpans = [];
+      var h = this.points[0];
       var lastIdx = this.points.length - 1;
       this.points[lastIdx].x = x;
       this.points[lastIdx].y = y;
       this.points[lastIdx].px = x;
       this.points[lastIdx].py = y;
 
-      // Immediately distribute all intermediate points along the tendon from head to anchor
-      var h = this.points[0];
       for (var pIdx = 1; pIdx < lastIdx; pIdx++) {
         var frac = pIdx / lastIdx;
-        this.points[pIdx].x = h.x + (x - h.x) * frac;
-        this.points[pIdx].y = h.y + (y - h.y) * frac;
-        this.points[pIdx].px = this.points[pIdx].x;
-        this.points[pIdx].py = this.points[pIdx].y;
-      }
-
-      this.anchorNode.setAttribute('cx', r1(x));
-      this.anchorNode.setAttribute('cy', r1(y));
-      this.anchorNode.setAttribute('r', (this.opts.headRadius * 1.25).toFixed(1));
-      this.anchorNode.style.display = '';
-
-      this._splash(x, y);
-      this._clearSelection();
-
-      if (typeof this.onAnchorChange === 'function') {
-        this.onAnchorChange(true, { x: x, y: y });
+        var mx = h.x + (x - h.x) * frac;
+        var my = h.y + (y - h.y) * frac + Math.sin(frac * Math.PI) * 25;
+        this.points[pIdx].x = mx;
+        this.points[pIdx].y = my;
+        this.points[pIdx].px = mx;
+        this.points[pIdx].py = my;
       }
     } else {
-      // Stage 2: Sever Stretched Cord & Drop with Gravity!
-      this._severAndDropRope();
-      this.isAnchored = false;
-      this.anchorNode.style.display = 'none';
-      this._clearSelection();
+      // Planting an additional anchor at (x, y) with ZERO jitter:
+      // 1. Freeze current active span into completedSpans exactly as it rests
+      var frozenSpan = [];
+      for (var i = 0; i < this.points.length; i++) {
+        var pt = this.points[i];
+        frozenSpan.push({
+          x: pt.x, y: pt.y,
+          px: pt.px, py: pt.py,
+          radius: pt.radius,
+          ax: pt.ax, ay: pt.ay
+        });
+      }
+      frozenSpan[0].x = x;
+      frozenSpan[0].y = y;
+      frozenSpan[0].px = x;
+      frozenSpan[0].py = y;
+      this.completedSpans.push(frozenSpan);
 
-      if (typeof this.onAnchorChange === 'function') {
-        this.onAnchorChange(false, null);
+      // 2. Initialize new active span starting at (x, y) with zero velocity jump
+      for (var sIdx = 0; sIdx < this.points.length; sIdx++) {
+        this.points[sIdx].x = x;
+        this.points[sIdx].y = y;
+        this.points[sIdx].px = x;
+        this.points[sIdx].py = y;
+      }
+    }
+
+    // Anchor burst
+    this._splash(x, y);
+    this._clearSelection();
+
+    if (typeof this.onAnchorChange === 'function') {
+      try {
+        this.onAnchorChange(true, {
+          count: this.checkpoints.length,
+          checkpoints: this.checkpoints
+        });
+      } catch (err) {
+        console.warn(err);
       }
     }
 
@@ -592,27 +639,116 @@
   };
 
   /**
+   * Final Release: Sever all checkpoints & let the entire threaded rope fall with Verlet physics!
+   */
+  Tendril.prototype.releaseAllAndDrop = function () {
+    if (!this.isAnchored && this.checkpoints.length === 0) return;
+
+    this._severAndDropRope();
+
+    // Clear all visual checkpoint nodes
+    while (this.checkpointGroup.firstChild) {
+      this.checkpointGroup.removeChild(this.checkpointGroup.firstChild);
+    }
+    this.checkpoints.length = 0;
+    this.completedSpans = [];
+    this.isAnchored = false;
+    this._clearSelection();
+
+    if (typeof this.onAnchorChange === 'function') {
+      try {
+        this.onAnchorChange(false, { count: 0, checkpoints: [] });
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    this._wake();
+  };
+
+  /**
+   * Clear all checkpoints without dropping a severed rope
+   */
+  Tendril.prototype.clearCheckpoints = function () {
+    if (this._singleClickTimer) {
+      clearTimeout(this._singleClickTimer);
+      this._singleClickTimer = null;
+    }
+    while (this.checkpointGroup.firstChild) {
+      this.checkpointGroup.removeChild(this.checkpointGroup.firstChild);
+    }
+    this.checkpoints.length = 0;
+    this.completedSpans = [];
+    this.isAnchored = false;
+    this._clearSelection();
+
+    if (typeof this.onAnchorChange === 'function') {
+      try {
+        this.onAnchorChange(false, { count: 0, checkpoints: [] });
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    this._wake();
+  };
+
+  /**
+   * Toggle Anchor shorthand (Maintains backward compatibility)
+   */
+  Tendril.prototype.toggleAnchor = function (x, y) {
+    if (!this.isAnchored) {
+      this.addCheckpoint(x, y);
+    } else {
+      this.releaseAllAndDrop();
+    }
+  };
+
+  /**
    * Drops the current stretched cord as an independent falling rope with Verlet physics
+   * Preserves the exact instantaneous shape of the woven cord across all anchor waypoints!
    */
   Tendril.prototype._severAndDropRope = function () {
+    var allPts = [];
+    if (!this.isAnchored || this.checkpoints.length === 0) {
+      allPts = this.points;
+    } else {
+      for (var i = 0; i < this.points.length; i++) {
+        allPts.push(this.points[i]);
+      }
+      for (var k = this.completedSpans.length - 1; k >= 0; k--) {
+        var span = this.completedSpans[k];
+        for (var j = 1; j < span.length; j++) {
+          allPts.push(span[j]);
+        }
+      }
+    }
+
     var severedPts = [];
-    for (var i = 0; i < this.points.length; i++) {
-      var p = this.points[i];
+    var segRestLens = [];
+    for (var i = 0; i < allPts.length; i++) {
+      var p = allPts[i];
       var vx = (p.x - p.px) || 0;
       var vy = (p.y - p.py) || 0;
       severedPts.push({
         x: p.x,
         y: p.y,
-        px: p.x - vx * 0.8,
-        py: p.y - vy * 0.8,
-        radius: p.radius
+        px: p.x - vx * 0.75,
+        py: p.y - vy * 0.75,
+        radius: p.radius || 6
       });
+    }
+
+    // Preserve the EXACT instantaneous distance of each segment so it falls in the identical shape!
+    for (var k = 0; k < severedPts.length - 1; k++) {
+      var d = Math.hypot(severedPts[k + 1].x - severedPts[k].x, severedPts[k + 1].y - severedPts[k].y);
+      segRestLens.push(Math.max(4, d));
     }
 
     var path = document.createElementNS(NS, 'path');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', this.opts.color);
-    path.setAttribute('stroke-width', this.opts.strokeWidth);
+    path.setAttribute('stroke-width', r1(Math.max(13, this.opts.strokeWidth * 1.35)));
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('stroke-linejoin', 'round');
     this.severedGroup.appendChild(path);
@@ -628,28 +764,25 @@
     }
     this.severedGroup.appendChild(nodeGroup);
 
-    var totalLen = 0;
-    for (var k = 0; k < severedPts.length - 1; k++) {
-      totalLen += Math.hypot(severedPts[k + 1].x - severedPts[k].x, severedPts[k + 1].y - severedPts[k].y);
-    }
-    var segRestLen = Math.max(12, totalLen / (severedPts.length - 1));
-
     var severedRope = {
       pts: severedPts,
       path: path,
       nodeGroup: nodeGroup,
       circleEls: circleEls,
-      segRestLen: segRestLen,
+      segRestLens: segRestLens,
+      segRestLen: segRestLens[0] || 14,
       life: 1.0,
       active: true
     };
 
     this.severedRopes.push(severedRope);
 
-    // Liquid bursts at head and anchor release points
+    // Liquid bursts at cursor head and every single active checkpoint location
     this._splash(this.target.x, this.target.y);
-    this._splash(this.anchor.x, this.anchor.y);
-    this.spill(this.target.x, this.target.y, { count: 12, speed: 4.5 });
+    for (var cpIdx = 0; cpIdx < this.checkpoints.length; cpIdx++) {
+      this._splash(this.checkpoints[cpIdx].x, this.checkpoints[cpIdx].y);
+    }
+    this.spill(this.target.x, this.target.y, { count: 14, speed: 5.0 });
 
     // Cursor instantly resets to mouse position with fresh free tail
     for (var m = 0; m < this.points.length; m++) {
@@ -801,37 +934,75 @@
           energy += Math.abs(dx) + Math.abs(dy);
         }
       } else {
-        // --- CLEAN 2-STAGE ANCHOR STRETCHING PHYSICS ---
-        // Tail stays firmly rooted to anchor position
-        var tail = pts[n - 1];
-        tail.px = tail.x; tail.py = tail.y;
-        tail.x = this.anchor.x;
-        tail.y = this.anchor.y;
+        // --- LIQUID ELASTIC ANCHOR PHYSICS (IDENTICAL FLUID KINEMATICS TO FREE ROPE MODE) ---
+        var numPins = this.checkpoints.length;
+        if (numPins > 0) {
+          var latestCP = this.checkpoints[numPins - 1];
+          var wobble = this.idle && o.idleWobble;
 
-        // Gravitational catenary droop proportional to stretch distance
-        var distHtoT = Math.hypot(h.x - tail.x, h.y - tail.y);
-        var maxSag = Math.min(48, distHtoT * 0.08);
+          // 1. Forward liquid follower wave along the active span (IDENTICAL to free cursor mode!)
+          for (var i = 1; i < n; i++) {
+            var p = pts[i], q = pts[i - 1];
+            p.px = p.x; p.py = p.y;
+            var tx = q.x, ty = q.y, k = a;
+            if (wobble) {
+              p.ax += o.idleSpeed * f * (1 + i * 0.08);
+              p.ay += o.idleSpeed * f * (1 + i * 0.08);
+              var amp = o.idleAmplitude * (i / n);
+              tx += Math.sin(p.ax) * amp;
+              ty += Math.cos(p.ay) * amp;
+              k = a * 0.72;
+            }
+            var dx = (tx - p.x) * k;
+            var dy = (ty - p.y) * k;
+            p.x += dx;
+            p.y += dy;
+            energy += Math.abs(dx) + Math.abs(dy);
+          }
 
-        // Distribute points evenly along the line between head and anchor with catenary sag
-        for (var idx = 1; idx < n - 1; idx++) {
-          var curr = pts[idx];
-          curr.px = curr.x; curr.py = curr.y;
+          // 2. Smooth anchor boundary correction
+          // Tail pts[n - 1] is anchored at latestCP.
+          // Distribute tail offset with progressive weighting (s^1.25)
+          // Near the cursor (s small), weight ~ 0, so fluid whipping waves are 100% free!
+          // Near the anchor (s -> 1), smoothly guides the rope to meet the pin.
+          var errX = pts[n - 1].x - latestCP.x;
+          var errY = pts[n - 1].y - latestCP.y;
 
-          var frac = idx / (n - 1);
-          var lineX = h.x + (tail.x - h.x) * frac;
-          var lineY = h.y + (tail.y - h.y) * frac;
-          var sag = Math.sin(frac * Math.PI) * maxSag;
+          var chord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
+          var sagAmp = Math.min(26, chord * 0.04);
 
-          var targetX = lineX;
-          var targetY = lineY + sag;
+          for (var i = 1; i < n; i++) {
+            var s = i / (n - 1);
+            var weight = Math.pow(s, 1.25);
+            pts[i].x -= errX * weight;
+            pts[i].y -= errY * weight;
 
-          // Smooth spring relaxation
-          var diffX = (targetX - curr.x) * 0.58;
-          var diffY = (targetY - curr.y) * 0.58;
+            // Organic catenary droop (arches downward with gravity)
+            if (i < n - 1) {
+              pts[i].y += Math.sin(s * Math.PI) * sagAmp * 0.20;
+            }
+          }
+          pts[n - 1].x = latestCP.x;
+          pts[n - 1].y = latestCP.y;
 
-          curr.x += diffX;
-          curr.y += diffY;
-          energy += Math.abs(diffX) + Math.abs(diffY);
+          // 3. Completed spans stay fixed at their anchor endpoints
+          if (this.completedSpans.length > 0) {
+            for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
+              var spanPts = this.completedSpans[cIdx];
+              var pinTail = this.checkpoints[cIdx];
+              var pinHead = this.checkpoints[cIdx + 1];
+              spanPts[0].x = pinHead.x; spanPts[0].y = pinHead.y;
+              spanPts[spanPts.length - 1].x = pinTail.x; spanPts[spanPts.length - 1].y = pinTail.y;
+
+              if (wobble) {
+                for (var m = 1; m < spanPts.length - 1; m++) {
+                  var u = m / (spanPts.length - 1);
+                  spanPts[m].ax += o.idleSpeed * f * 0.5;
+                  spanPts[m].y += Math.sin(spanPts[m].ax) * o.idleAmplitude * Math.sin(u * Math.PI) * 0.06;
+                }
+              }
+            }
+          }
         }
       }
 
@@ -857,47 +1028,94 @@
   };
 
   Tendril.prototype._drawRope = function () {
-    var pts = this.points, n = pts.length;
-    var d = 'M' + r1(pts[0].x) + ' ' + r1(pts[0].y);
-    for (var i = 0; i < n - 1; i++) {
-      var p0 = pts[i > 0 ? i - 1 : 0], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i < n - 2 ? i + 2 : i + 1];
+    var allPts = [];
+    if (!this.isAnchored || this.checkpoints.length === 0) {
+      allPts = this.points;
+    } else {
+      for (var i = 0; i < this.points.length; i++) {
+        allPts.push(this.points[i]);
+      }
+      for (var k = this.completedSpans.length - 1; k >= 0; k--) {
+        var span = this.completedSpans[k];
+        for (var j = 1; j < span.length; j++) {
+          allPts.push(span[j]);
+        }
+      }
+    }
+
+    var nAll = allPts.length;
+    if (nAll < 2) return;
+
+    var d = 'M' + r1(allPts[0].x) + ' ' + r1(allPts[0].y);
+    for (var i = 0; i < nAll - 1; i++) {
+      var p0 = allPts[i > 0 ? i - 1 : 0],
+          p1 = allPts[i],
+          p2 = allPts[i + 1],
+          p3 = allPts[i < nAll - 2 ? i + 2 : i + 1];
       d += 'C' + r1(p1.x + (p2.x - p0.x) / 6) + ' ' + r1(p1.y + (p2.y - p0.y) / 6) + ' ' +
                  r1(p2.x - (p3.x - p1.x) / 6) + ' ' + r1(p2.y - (p3.y - p1.y) / 6) + ' ' +
                  r1(p2.x) + ' ' + r1(p2.y);
     }
     this.rope.setAttribute('d', d);
 
-    // Physical total length of the cord
-    var totalLen = 0;
-    for (var k = 0; k < n - 1; k++) {
-      totalLen += Math.hypot(pts[k + 1].x - pts[k].x, pts[k + 1].y - pts[k].y);
-    }
-    var restLen = (n - 1) * 14;
-    var stretchRatio = Math.max(1.0, totalLen / restLen);
+    var D_diag = Math.hypot(this.viewW, this.viewH);
+    var L_max = Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
 
-    // Volume Conservation: cord thins when stretched, but NEVER drops below SVG gooey filter visibility!
-    // With gooey blur of 7px, stroke must stay >= 7.0px and node radius >= 6.0px to stay gooey & visible
+    // Calculate total chord distance across all active anchors
+    var totalChord = 0;
+    for (var k = 0; k < nAll - 1; k++) {
+      totalChord += Math.hypot(allPts[k + 1].x - allPts[k].x, allPts[k + 1].y - allPts[k].y);
+    }
+
+    // Elastic Thinning Factor (Poisson necking):
+    // Length grows as used; as length increases, the rope stretches and gets thinner!
+    var stretchRatio = Math.min(1.0, totalChord / L_max);
+    var thinFactor = this.isAnchored
+      ? Math.max(0.70, 1.0 - 0.30 * stretchRatio)
+      : 1.0;
+
+    // Stroke width scales smoothly with stretch (never drops below filter cutoff!)
     var effectiveStroke = this.isAnchored
-      ? Math.max(7.2, this.opts.strokeWidth / Math.pow(stretchRatio, 0.28))
+      ? Math.max(9.5, this.opts.strokeWidth * 1.35 * thinFactor)
       : this.opts.strokeWidth;
     this.rope.setAttribute('stroke-width', r1(effectiveStroke));
 
-    var g = this.grad, head = pts[0], tail = pts[n - 1];
+    var g = this.grad, head = allPts[0], tail = allPts[nAll - 1];
     g.setAttribute('x1', r1(head.x)); g.setAttribute('y1', r1(head.y));
     g.setAttribute('x2', r1(tail.x + 0.1)); g.setAttribute('y2', r1(tail.y + 0.1));
 
-    for (var j = 0; j < n; j++) {
-      var c = this.nodes[j], pt = pts[j];
-      c.setAttribute('cx', r1(pt.x));
-      c.setAttribute('cy', r1(pt.y));
-      if (j === 0) {
-        c.setAttribute('r', r1(pt.radius * this.headScale));
-      } else if (this.isAnchored) {
-        // Intermediate nodes stay plump to bridge the gooey liquid path
-        var nodeRad = Math.max(6.2, pt.radius / Math.pow(stretchRatio, 0.28));
-        c.setAttribute('r', r1(nodeRad));
+    // Full liquid beads and tapering matching non-anchor mode (Image 2):
+    // Head circle at cursor tapering down to a slender droplet at the anchor tail!
+    var headRad = this.opts.headRadius * this.headScale * (this.isAnchored ? thinFactor : 1.0);
+    var tailRad = this.opts.tailRadius * (this.isAnchored ? Math.max(0.80, thinFactor) : 1.0);
+
+    while (this.nodes.length < nAll) {
+      var circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('fill', this.opts.secondaryColor);
+      this.nodeGroup.appendChild(circle);
+      this.nodes.push(circle);
+    }
+
+    for (var j = 0; j < this.nodes.length; j++) {
+      var c = this.nodes[j];
+      if (j < nAll) {
+        c.style.display = '';
+        var pt = allPts[j];
+        c.setAttribute('cx', r1(pt.x));
+        c.setAttribute('cy', r1(pt.y));
+
+        var frac = j / (nAll - 1);
+        var beadR = headRad - (headRad - tailRad) * Math.pow(frac, 0.75);
+
+        if (j === 0) {
+          c.setAttribute('r', r1(headRad));
+          c.setAttribute('fill', this.opts.color);
+        } else {
+          c.setAttribute('r', r1(Math.max(4.0, beadR)));
+          c.setAttribute('fill', this.opts.secondaryColor);
+        }
       } else {
-        c.setAttribute('r', r1(pt.radius));
+        c.style.display = 'none';
       }
     }
   };
@@ -930,17 +1148,17 @@
         if (pt.y < bottomLimit) allOffscreen = false;
       }
 
-      // Distance constraints preserve cord integrity as it falls
-      var targetDist = sr.segRestLen;
+      // Distance constraints preserve cord integrity in its exact released shape!
       for (var pass = 0; pass < 2; pass++) {
         for (var j = 0; j < len - 1; j++) {
           var p1 = pts[j];
           var p2 = pts[j + 1];
+          var targetDist = (sr.segRestLens && sr.segRestLens[j]) ? sr.segRestLens[j] : sr.segRestLen;
           var dx = p2.x - p1.x;
           var dy = p2.y - p1.y;
           var dist = Math.hypot(dx, dy);
           if (dist > 0.001) {
-            var diff = (dist - targetDist) / dist * 0.48;
+            var diff = (dist - targetDist) / dist * 0.45;
             p1.x += dx * diff;
             p1.y += dy * diff;
             p2.x -= dx * diff;
@@ -1038,7 +1256,11 @@
       this.nodes[i].setAttribute('fill', this.opts.secondaryColor);
     }
     this.liquidGroup.setAttribute('fill', this.opts.color);
-    this.anchorNode.setAttribute('fill', this.opts.color);
+    if (this.checkpointGroup) {
+      for (var cp = 0; cp < this.checkpoints.length; cp++) {
+        if (this.checkpoints[cp].el) this.checkpoints[cp].el.setAttribute('fill', this.opts.color);
+      }
+    }
     this._wake();
   };
 
@@ -1095,6 +1317,12 @@
     document.removeEventListener('visibilitychange', this._vis);
 
     this._removeHideNativeCursor();
+
+    if (this._singleClickTimer) {
+      clearTimeout(this._singleClickTimer);
+      this._singleClickTimer = null;
+    }
+    this.clearCheckpoints();
 
     for (var i = 0; i < this.severedRopes.length; i++) {
       this._destroySeveredRope(this.severedRopes[i]);
