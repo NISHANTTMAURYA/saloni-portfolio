@@ -916,18 +916,11 @@
           prevMouse = [x, y];
           isMoving = true;
 
-          // Seamlessly suppress Tendril's liquid rope and drips over the photo
-          // while keeping the pointer circle and native cursor tracking untouched
+          // Completely hide Tendril cursor and its difference filter while hovering over the hero photo
           const tendril = window.__tendril_auto_instance;
-          if (tendril) {
-            if (tendril.rope) tendril.rope.style.display = 'none';
-            if (tendril.liquidGroup) tendril.liquidGroup.style.display = 'none';
-            if (tendril.nodeGroup) {
-              // Hide trailing tail nodes, keep head cursor bead (index 0)
-              for (let i = 1; i < tendril.nodes.length; i++) {
-                if (tendril.nodes[i]) tendril.nodes[i].style.display = 'none';
-              }
-            }
+          if (tendril && tendril.wrap) {
+            tendril.wrap.style.opacity = '0';
+            tendril.wrap.style.visibility = 'hidden';
           }
         };
 
@@ -936,16 +929,11 @@
           isMoving = false;
           lastUserTime = performance.now();
 
-          // Restore Tendril's fluid rope when leaving the photo
+          // Restore Tendril cursor as soon as pointer leaves the photo
           const tendril = window.__tendril_auto_instance;
-          if (tendril) {
-            if (tendril.rope) tendril.rope.style.display = '';
-            if (tendril.liquidGroup) tendril.liquidGroup.style.display = '';
-            if (tendril.nodeGroup) {
-              for (let i = 1; i < tendril.nodes.length; i++) {
-                if (tendril.nodes[i]) tendril.nodes[i].style.display = '';
-              }
-            }
+          if (tendril && tendril.wrap) {
+            tendril.wrap.style.opacity = '1';
+            tendril.wrap.style.visibility = 'visible';
           }
         };
 
@@ -1081,14 +1069,9 @@
 
           // Restore Tendril on unmount
           const tendril = window.__tendril_auto_instance;
-          if (tendril) {
-            if (tendril.rope) tendril.rope.style.display = '';
-            if (tendril.liquidGroup) tendril.liquidGroup.style.display = '';
-            if (tendril.nodeGroup) {
-              for (let i = 1; i < tendril.nodes.length; i++) {
-                if (tendril.nodes[i]) tendril.nodes[i].style.display = '';
-              }
-            }
+          if (tendril && tendril.wrap) {
+            tendril.wrap.style.opacity = '1';
+            tendril.wrap.style.visibility = 'visible';
           }
 
           // Cleanup WebGL resources
