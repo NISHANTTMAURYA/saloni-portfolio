@@ -83,14 +83,16 @@
     tripleTapAnchor: true,      // Triple-Tap = Toggle Anchor / Sever & Drop
     tripleTapMaxInterval: 480,  // Maximum milliseconds across 3 taps
     multiCheckpoints: true,     // Single click while in Anchor mode drops additional pins (in 'multi' mode)
-    anchorFollowStiffness: 0.05,// 'single' mode: spring pull of the old pin toward the new spot (per frame)
-    anchorFollowDamping: 0.82,  // 'single' mode: spring damping (lower = more liquid overshoot)
+    anchorFollowStiffness: 0.016,// 'single' mode: gentle smooth spring pull toward new anchor point
+    anchorFollowDamping: 0.88,  // 'single' mode: high viscous liquid damping to prevent snappy jumping and overshoot
 
     // Anchored Rope Physics (Verlet, inextensible, length-limited, water-like drag)
-    ropeLength: 0,              // Max rope length in px (0 = auto ≈ 88% of viewport diagonal)
-    ropeSlack: 0.18,            // Extra length (fraction of chord) the rope has while it's NOT at full length
-    ropeMinSlack: 26,           // Minimum slack (px) so short ropes still droop
-    ropeGravity: 0.32,          // Downward pull on anchored rope joints (px/frame²)
+    ropeLength: 0,              // Max rope length in px (0 = auto ≈ 1.35x screen diagonal + ropeLengthOffset)
+    ropeLengthOffset: 3200,     // Extra pixel length added on top of screen diagonal for massive weaving capacity
+    ropeSlack: 0.35,            // Maximum slack fraction when cursor is close to anchor
+    ropeMinSlack: 28,           // Minimum base slack (px) so short cords still droop
+    ropeTensionSensitivity: 1.0,// Configurable sensitivity (0.2 = loose/sluggish, 1.0 = standard, 2.5 = hyper-reactive)
+    ropeGravity: 0.42,          // Downward gravity pull for expressive catenary droop
     ropeDamping: 0.955,         // Velocity retention per frame (lower = thicker, more water-like)
     ropeIterations: 14,         // Constraint solver passes (higher = less stretchy)
     severedRopeGravity: 0.65,   // Gravitational downward pull for detached falling ropes
@@ -173,6 +175,9 @@
     this._singleClickTimer = null;
     this.severedRopes = [];
 
+    this.scrollX = window.scrollX || window.pageXOffset || 0;
+    this.scrollY = window.scrollY || window.pageYOffset || 0;
+
     // Bound handlers
     this._move = this._move.bind(this);
     this._down = this._down.bind(this);
@@ -185,6 +190,7 @@
     this._out = this._out.bind(this);
     this._vis = this._vis.bind(this);
     this._resize = this._resize.bind(this);
+    this._scroll = this._scroll.bind(this);
     this._tick = this._tick.bind(this);
 
     this.init();
@@ -219,6 +225,7 @@
     window.addEventListener('mousedown', this._onMouseDown, { passive: false, capture: true });
     window.addEventListener('selectstart', this._onSelectStart, { passive: false, capture: true });
     window.addEventListener('resize', this._resize, { passive: true });
+    window.addEventListener('scroll', this._scroll, { passive: true });
     document.addEventListener('pointerover', this._over, { passive: true });
     document.addEventListener('pointerout', this._out, { passive: true });
     document.addEventListener('visibilitychange', this._vis);
@@ -433,6 +440,15 @@
     return false;
   };
 
+  Tendril.prototype._isTextInput = function (t) {
+    if (!t) return false;
+    var tag = t.tagName ? t.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+    if (t.isContentEditable) return true;
+    if (t.closest && t.closest('input, textarea, select, [contenteditable="true"]')) return true;
+    return false;
+  };
+
   /**
    * Temporarily disables text selection page-wide (used from the 2nd rapid tap onward,
    * so double/triple-click word/paragraph highlighting can never kick in).
@@ -465,23 +481,21 @@
   };
 
   Tendril.prototype._onMouseDown = function (e) {
-    if (!this.opts.preventTextSelectOnTap) return;
-    if (this._isInteractive(e.target)) return;
-    // Detail >= 2 is double-click or triple-click: prevent browser from highlighting words/paragraphs!
+    if (this._isTextInput(e.target)) return;
+    // Detail >= 2 is rapid double-click or triple-click: prevent browser from selecting text
     if (e.detail >= 2) {
-      if (e.cancelable) e.preventDefault();
-      this._lockSelection();
+      if (e.cancelable && e.preventDefault) e.preventDefault();
+      this._clearSelection();
+      this._lockSelection(1000);
     }
   };
 
   Tendril.prototype._onSelectStart = function (e) {
-    if (!this.opts.preventTextSelectOnTap) return;
-    if (this._isInteractive(e.target)) return;
+    if (this._isTextInput(e.target)) return;
     var now = performance.now();
     var recentTap = this._lastTapTime && (now - this._lastTapTime < 600);
-    // Block selection whenever rapid-tapping for anchors or actively anchored
-    if (recentTap || this.isAnchored) {
-      if (e.cancelable) e.preventDefault();
+    if (recentTap || this.isAnchored || this.tapHistory.length > 1) {
+      if (e.cancelable && e.preventDefault) e.preventDefault();
       this._clearSelection();
     }
   };
@@ -490,8 +504,7 @@
     if (!this.started) this._move(e);
     var x = e.clientX, y = e.clientY;
     var now = performance.now();
-    var isInteractive = this._isInteractive(e.target);
-    if (isInteractive) return;
+    if (this._isTextInput(e.target) || (e.target.closest && e.target.closest('[data-no-anchor]'))) return;
 
     // Rapid repeat tap (2nd / 3rd of a multi-tap) → lock selection BEFORE the browser's
     // mousedown runs its word/paragraph selection. (Do NOT preventDefault pointerdown:
@@ -510,11 +523,16 @@
       return;
     }
 
-    if (this.opts.tripleTapAnchor) {
+    var isInteractive = this._isInteractive(e.target);
+
+    // Interactive elements (buttons, links, cards) NEVER trigger triple-tap severing:
+    if (isInteractive) {
+      this.tapHistory.length = 0;
+    } else if (this.opts.tripleTapAnchor) {
       this.tapHistory.push({ time: now, x: x, y: y });
       if (this.tapHistory.length > 3) this.tapHistory.shift();
 
-      // Check for 3 rapid taps
+      // Check for 3 rapid taps on blank background canvas
       if (this.tapHistory.length === 3) {
         var t0 = this.tapHistory[0], t2 = this.tapHistory[2];
         var timeSpan = t2.time - t0.time;
@@ -526,13 +544,18 @@
             clearTimeout(this._singleClickTimer);
             this._singleClickTimer = null;
           }
-          this._lockSelection(900);
+          this._clearSelection();
+          if (window.getSelection) {
+            var sel = window.getSelection();
+            if (sel && sel.removeAllRanges) sel.removeAllRanges();
+          }
+          this._lockSelection(1200);
 
           if (!this.isAnchored) {
             // Triple-Tap 1: Start Anchor Mode (Plant 1st Pin)
             this.addCheckpoint(x, y);
           } else {
-            // Triple-Tap 2: Final Release! Sever all checkpoints & drop physics rope
+            // Triple-Tap 2: Final Release on blank background!
             this.releaseAllAndDrop();
           }
 
@@ -544,6 +567,11 @@
 
     // While already in Anchor mode, single click behavior:
     if (this.isAnchored) {
+      // Trigger liquid splash & spill on click even while in anchor mode
+      if (this.opts.splashOnClick) this._splash(x, y);
+      if (this.opts.spillOnClick) this.spill(x, y);
+      this.headScale = this.targetHeadScale * 0.65;
+
       if (this._singleClickTimer) {
         clearTimeout(this._singleClickTimer);
         this._singleClickTimer = null;
@@ -621,6 +649,85 @@
   Tendril.prototype._resize = function () {
     this.viewH = window.innerHeight;
     this.viewW = window.innerWidth;
+  };
+
+  Tendril.prototype._scroll = function () {
+    var curX = window.scrollX || window.pageXOffset || 0;
+    var curY = window.scrollY || window.pageYOffset || 0;
+    var dx = curX - this.scrollX;
+    var dy = curY - this.scrollY;
+    this.scrollX = curX;
+    this.scrollY = curY;
+
+    if (dx === 0 && dy === 0) return;
+
+    // Shift planted checkpoints so they stay locked to page content instead of viewport
+    if (this.checkpoints && this.checkpoints.length > 0) {
+      for (var i = 0; i < this.checkpoints.length; i++) {
+        var cp = this.checkpoints[i];
+        cp.x -= dx;
+        cp.y -= dy;
+        if (cp.tx !== undefined) { cp.tx -= dx; cp.ty -= dy; }
+        if (cp.el) {
+          cp.el.setAttribute('cx', r1(cp.x));
+          cp.el.setAttribute('cy', r1(cp.y));
+        }
+      }
+      this.anchor.x -= dx;
+      this.anchor.y -= dy;
+
+      // Also adjust frozen completed spans
+      if (this.completedSpans && this.completedSpans.length > 0) {
+        for (var s = 0; s < this.completedSpans.length; s++) {
+          var span = this.completedSpans[s];
+          for (var p = 0; p < span.length; p++) {
+            span[p].x -= dx;
+            span[p].y -= dy;
+            span[p].px -= dx;
+            span[p].py -= dy;
+          }
+        }
+      }
+
+      // Also adjust anchored joints of the active rope (head stays at cursor, tail and body shift)
+      if (this.isAnchored && this.points) {
+        var nPts = this.points.length;
+        for (var j = 1; j < nPts; j++) {
+          var weight = j / (nPts - 1);
+          this.points[j].x -= dx * weight;
+          this.points[j].y -= dy * weight;
+          this.points[j].px -= dx * weight;
+          this.points[j].py -= dy * weight;
+        }
+      }
+    }
+
+    // Offset severed falling ropes with page scroll
+    if (this.severedRopes && this.severedRopes.length > 0) {
+      for (var r = 0; r < this.severedRopes.length; r++) {
+        var sr = this.severedRopes[r];
+        if (!sr.active) continue;
+        for (var ptIdx = 0; ptIdx < sr.pts.length; ptIdx++) {
+          sr.pts[ptIdx].x -= dx;
+          sr.pts[ptIdx].y -= dy;
+          sr.pts[ptIdx].px -= dx;
+          sr.pts[ptIdx].py -= dy;
+        }
+      }
+    }
+
+    // Offset liquid droplets with scroll
+    if (this.pool && this.activeCount > 0) {
+      for (var pi = 0; pi < this.pool.length; pi++) {
+        var part = this.pool[pi];
+        if (part.active) {
+          part.x -= dx;
+          part.y -= dy;
+        }
+      }
+    }
+
+    this._wake();
   };
 
   /* ---------------- Multi-Checkpoint Architecture ---------------- */
@@ -833,6 +940,16 @@
       frozenSpan[0].y = y;
       frozenSpan[0].px = x;
       frozenSpan[0].py = y;
+
+      // Freeze current active span into completedSpans exactly as it rests
+      var prevPin = this.checkpoints[this.checkpoints.length - 2];
+      if (prevPin) {
+        var lIdx = frozenSpan.length - 1;
+        frozenSpan[lIdx].x = prevPin.x;
+        frozenSpan[lIdx].y = prevPin.y;
+        frozenSpan[lIdx].px = prevPin.x;
+        frozenSpan[lIdx].py = prevPin.y;
+      }
       this.completedSpans.push(frozenSpan);
 
       // 2. Initialize new active span starting at (x, y) with zero velocity jump
@@ -841,6 +958,39 @@
         this.points[sIdx].y = y;
         this.points[sIdx].px = x;
         this.points[sIdx].py = y;
+      }
+
+      // FIFO Anchor Conservation: Enforce max rope length calculated from screen size
+      var maxRope = this._ropeLength();
+      var totalChord = 0;
+      for (var c = 0; c < this.completedSpans.length; c++) {
+        var pA = this.checkpoints[c];
+        var pB = this.checkpoints[c + 1];
+        if (pA && pB) {
+          totalChord += Math.hypot(pB.x - pA.x, pB.y - pA.y);
+        }
+      }
+
+      // Pop oldest pins and spans in FIFO order if total rope length exceeds screen limit
+      while (this.checkpoints.length > 2 && totalChord > maxRope) {
+        var p0 = this.checkpoints[0];
+        var p1 = this.checkpoints[1];
+        var spanDist = (p0 && p1) ? Math.hypot(p1.x - p0.x, p1.y - p0.y) : 0;
+
+        // Remove oldest pin element from DOM
+        var oldPin = this.checkpoints.shift();
+        if (oldPin && oldPin.el && oldPin.el.parentNode) {
+          oldPin.el.parentNode.removeChild(oldPin.el);
+        }
+
+        // Remove oldest completed span
+        this.completedSpans.shift();
+        totalChord -= spanDist;
+      }
+
+      if (this.checkpoints.length > 0) {
+        this.anchor.x = this.checkpoints[0].x;
+        this.anchor.y = this.checkpoints[0].y;
       }
     }
 
@@ -1199,24 +1349,63 @@
           var activeChord = Math.hypot(h.x - latestCP.x, h.y - latestCP.y);
           totalChord += activeChord;
 
-          // Available slack: generous while far from full length, shrinking to ZERO at full length
-          var slackCap = Math.max(o.ropeMinSlack, totalChord * o.ropeSlack);
-          var slackLen = Math.max(0, Math.min(L_rope - totalChord, slackCap));
-          var slackRatio = totalChord > 1 ? slackLen / totalChord : 0;
-          // 0 = completely loose, 1 = pulled taut (exposed for styling / callbacks)
-          this.ropeTension = slackCap > 0 ? 1 - slackLen / slackCap : 1;
+          // CONTINUOUS DYNAMIC TENSION & SLACK SHARING ACROSS ALL ANCHOR SPANS:
+          // The tension in the rope is shared globally like a cord threaded through rings.
+          // When pulling away or moving fast, tension builds smoothly and pulls ALL spans taut.
+          // When relaxing, moving close, or pausing, tension eases and ALL spans droop naturally with gravity.
+          var sens = (typeof o.ropeTensionSensitivity === 'number' && o.ropeTensionSensitivity > 0)
+            ? o.ropeTensionSensitivity : 1.0;
 
-          // Active span: cursor head  ->  newest pin
+          // Stretch distance threshold to achieve full tension (scaled by sensitivity)
+          var stretchThreshold = Math.max(100, 360 / sens);
+          var pullRatio = Math.min(1.0, activeChord / stretchThreshold);
+          var activeTension = Math.pow(pullRatio, 1.3);
+
+          // Cursor movement velocity also builds dynamic pull tension
+          var cursorSpeed = Math.hypot(h.x - h.px, h.y - h.py) / (dt > 0 ? dt : 16);
+          var speedTension = Math.min(1.0, cursorSpeed * 0.12 * sens);
+
+          // Global cord constraint: rope pulls taut if woven length approaches physical limit
+          var globalTension = Math.max(0, Math.min(1.0, (totalChord - L_rope * 0.75) / (L_rope * 0.25)));
+
+          // Target tension combines distance pull, motion dynamics, and global length limit
+          var targetTension = Math.max(activeTension, speedTension, globalTension);
+
+          // Smooth low-pass physical tension integration:
+          // Guarantees zero instantaneous jump/pop when planting an anchor pin,
+          // while allowing rapid tightening when actively pulling!
+          if (typeof this.ropeTension !== 'number' || isNaN(this.ropeTension)) {
+            this.ropeTension = targetTension;
+          } else {
+            var tensionRate = 1 - Math.exp(-dt / (targetTension > this.ropeTension ? 100 : 220));
+            this.ropeTension += (targetTension - this.ropeTension) * tensionRate;
+          }
+
+          var looseness = Math.max(0, 1.0 - this.ropeTension);
+
+          // Active span: cursor head -> newest pin
+          var activeSlackCap = Math.max(30, 200 * (o.ropeSlack || 0.25));
+          var activeMaxExtra = Math.min(activeSlackCap, activeChord * (o.ropeSlack || 0.25)) + (o.ropeMinSlack || 20) * 0.5;
+          var activeTargetLen = activeChord + activeMaxExtra * looseness;
+
           energy += this._simulateSpan(pts, h, latestCP,
-            activeChord * (1 + slackRatio) + (totalChord > 1 ? 0 : o.ropeMinSlack), f, wobble);
+            activeTargetLen, f, wobble);
 
-          // Completed spans: pin[c+1]  ->  pin[c]
+          // Completed spans: between planted anchor pins
+          // Full physical catenary slack sharing: ALL completed spans tighten when pulling
+          // and gracefully fall / droop under gravity when relaxing!
           for (var cIdx = 0; cIdx < this.completedSpans.length; cIdx++) {
+            var span = this.completedSpans[cIdx];
+            var ch = spanChords[cIdx];
+            var spanSlackCap = Math.max(30, 200 * (o.ropeSlack || 0.25));
+            var spanMaxExtra = Math.min(spanSlackCap, ch * (o.ropeSlack || 0.25)) + (o.ropeMinSlack || 20) * 0.5;
+            var spanTargetLen = ch + spanMaxExtra * looseness;
+
             energy += this._simulateSpan(
-              this.completedSpans[cIdx],
+              span,
               this.checkpoints[cIdx + 1],
               this.checkpoints[cIdx],
-              spanChords[cIdx] * (1 + slackRatio),
+              spanTargetLen,
               f, wobble
             );
           }
@@ -1249,8 +1438,11 @@
    */
   Tendril.prototype._ropeLength = function () {
     if (this.opts.ropeLength > 0) return this.opts.ropeLength;
-    var D_diag = Math.hypot(this.viewW, this.viewH);
-    return Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+    var w = this.viewW || (typeof window !== 'undefined' ? window.innerWidth : 1200);
+    var h = this.viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+    var diag = Math.hypot(w, h);
+    var offset = (typeof this.opts.ropeLengthOffset === 'number') ? this.opts.ropeLengthOffset : 3200;
+    return Math.max(1600, Math.round(diag * 1.35) + offset);
   };
 
   /**
@@ -1275,6 +1467,7 @@
 
     var first = arr[0], last = arr[segs];
     first.x = A.x; first.y = A.y;
+    first.px = A.x; first.py = A.y;
     last.x = B.x; last.y = B.y;
     last.px = B.x; last.py = B.y;
 
@@ -1328,22 +1521,42 @@
     for (var i = 0; i < this.checkpoints.length; i++) {
       var cp = this.checkpoints[i];
       if (cp.tx === undefined) continue;
-      var d = Math.pow(o.anchorFollowDamping, f);
-      cp.vx = (cp.vx + (cp.tx - cp.x) * o.anchorFollowStiffness * f) * d;
-      cp.vy = (cp.vy + (cp.ty - cp.y) * o.anchorFollowStiffness * f) * d;
-      cp.x += cp.vx * f;
-      cp.y += cp.vy * f;
-      if (Math.abs(cp.tx - cp.x) < 0.3 && Math.abs(cp.ty - cp.y) < 0.3 &&
-          Math.abs(cp.vx) + Math.abs(cp.vy) < 0.2) {
-        cp.x = cp.tx; cp.y = cp.ty;
-        cp.vx = 0; cp.vy = 0;
-        cp.tx = undefined; cp.ty = undefined;
+
+      var dx = cp.tx - cp.x;
+      var dy = cp.ty - cp.y;
+      var dist = Math.hypot(dx, dy);
+
+      if (dist < 1.0 && Math.hypot(cp.vx || 0, cp.vy || 0) < 0.6) {
+        cp.x = cp.tx;
+        cp.y = cp.ty;
+        cp.vx = 0;
+        cp.vy = 0;
+        cp.tx = undefined;
+        cp.ty = undefined;
+      } else {
+        var d = Math.pow(o.anchorFollowDamping, f);
+        cp.vx = ((cp.vx || 0) + dx * o.anchorFollowStiffness * f) * d;
+        cp.vy = ((cp.vy || 0) + dy * o.anchorFollowStiffness * f) * d;
+
+        // Cap peak glide speed so the pin never teleports or snaps violently across the screen
+        var maxSpd = 12.0;
+        var spd = Math.hypot(cp.vx, cp.vy);
+        if (spd > maxSpd) {
+          cp.vx = (cp.vx / spd) * maxSpd;
+          cp.vy = (cp.vy / spd) * maxSpd;
+        }
+
+        cp.x += cp.vx * f;
+        cp.y += cp.vy * f;
       }
+
       if (cp.el) {
         cp.el.setAttribute('cx', r1(cp.x));
         cp.el.setAttribute('cy', r1(cp.y));
       }
-      energy += Math.abs(cp.vx) + Math.abs(cp.vy);
+      this.anchor.x = cp.x;
+      this.anchor.y = cp.y;
+      energy += Math.abs(cp.vx || 0) + Math.abs(cp.vy || 0);
     }
     return energy;
   };
@@ -1379,8 +1592,7 @@
     }
     this.rope.setAttribute('d', d);
 
-    var D_diag = Math.hypot(this.viewW, this.viewH);
-    var L_max = Math.max(600, Math.min(2400, Math.round(D_diag * 0.88)));
+    var L_max = this._ropeLength();
 
     // Calculate total chord distance across all active anchors
     var totalChord = 0;
@@ -1612,8 +1824,27 @@
   };
 
   Tendril.reportBug = function () {
-    var mailto = 'mailto:mauryanishant2005@gmail.com?subject=Tendril.js%20Bug%20Report&body=Hi%20Nishant,%0A%0AI%20found%20an%20issue%20with%20Tendril.js:%0A%0A-%20Browser:%20' + encodeURIComponent(navigator.userAgent) + '%0A-%20Viewport:%20' + window.innerWidth + 'x' + window.innerHeight;
-    window.location.href = mailto;
+    if (typeof document !== 'undefined') {
+      var modal = document.getElementById('bugReportModal');
+      if (modal && typeof triggerBugReport === 'function') {
+        triggerBugReport();
+        return;
+      }
+    }
+    var mailto = 'mailto:mauryanishant2005@gmail.com?subject=Tendril.js%20Bug%20Report&body=Hi%20Nishant,%0A%0AI%20found%20an%20issue%20with%20Tendril.js:%0A%0A-%20Browser:%20' + encodeURIComponent(typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown') + '%0A-%20Viewport:%20' + (typeof window !== 'undefined' ? window.innerWidth + 'x' + window.innerHeight : 'N/A');
+    if (typeof document !== 'undefined') {
+      var a = document.createElement('a');
+      a.href = mailto;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        if (a.parentNode) a.parentNode.removeChild(a);
+      }, 250);
+    } else if (typeof window !== 'undefined') {
+      window.location.href = mailto;
+    }
   };
 
   Tendril.prototype.reportBug = function () {
@@ -1633,6 +1864,7 @@
     window.removeEventListener('mousedown', this._onMouseDown, { capture: true });
     window.removeEventListener('selectstart', this._onSelectStart, { capture: true });
     window.removeEventListener('resize', this._resize);
+    window.removeEventListener('scroll', this._scroll);
     document.removeEventListener('pointerover', this._over);
     document.removeEventListener('pointerout', this._out);
     document.removeEventListener('visibilitychange', this._vis);

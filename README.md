@@ -101,10 +101,10 @@ Handmade-style developer, founder & UI/UX portfolio with cursor-tracking chibi 2
   - Added authentic asymmetrical hand-drawn rotations (`-rotate-2`, `rotate-6`, `rotate-12`, `-rotate-8`, `rotate-3`, etc.) to break rigid symmetry.
 * **Deep Linking & Hash Navigation:**
   - Added synchronized hash routing (`#home`, `#projects`, `#experience`, `#about`, `#contact`) with `window.onhashchange` listener for native browser history and deep linking.
-* **Hand-Drawn Queen Crown Doodle on Hero Character:**
-  - Added a regal, authentic hand-drawn Queen Crown doodle 👑 perched right atop Saloni's wavy hair on the Home page hero sticker.
-  - Features 5 sketchbook peaks, arched rose headband, ruby, emerald, sapphire and gold gems, pearl tips, and side twinkling star sparkles.
-  - Tilted at `rotate-[14deg]` to match Saloni's posture looking up towards the coffee mug and good vibes.
+* **Hand-Drawn Baker Chef Hat Doodle on Hero Character:**
+  - Added a whimsical, authentic hand-drawn Baker Chef Hat (toque blanche) doodle 👩‍🍳 perched right atop Saloni's wavy hair on the Home page hero sticker.
+  - Features billowing cloud puffs with creamy pastel gradient fill, interior fabric pleat lines, snug arched headband with sweet pink baker ribbon and heart emblem, aroma steam wisps, and golden magic twinkles.
+  - Tilted at `rotate-[12deg]` to match Saloni's posture looking up towards the coffee mug and good vibes.
 * **Randomized & Scattered Contact Page Doodles:**
   - Broke the rigid 3x2 vertical column layout into an organic, scattered sketchbook spread with varying X/Y offsets and playful rotations.
 * **Experience Page Randomized Side Flank Doodles:**

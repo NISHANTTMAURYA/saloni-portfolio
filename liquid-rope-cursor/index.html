@@ -1095,6 +1095,125 @@
       color: #fff;
     }
 
+    /* Interactive Bug Report & Diagnostics Modal */
+    .bug-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 10000000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    .bug-modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      max-width: 540px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+    }
+    .bug-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bug-modal-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+    .bug-modal-close {
+      border: none;
+      background: var(--bg-card-subtle);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .bug-modal-close:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .bug-modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .bug-diag-box {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      word-break: break-all;
+      user-select: all;
+    }
+    .bug-modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .bug-modal-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: none;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .bug-modal-btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .bug-modal-btn.primary:hover {
+      transform: translateY(-2px);
+    }
+    .bug-modal-btn.secondary {
+      background: var(--bg-card-subtle);
+      color: var(--text);
+      border: 1px solid var(--border-card);
+    }
+    .bug-modal-btn.secondary:hover {
+      background: var(--border-card);
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
     footer {
       border-top: 1px solid var(--border-card);
       padding: 40px 5%;
@@ -1191,7 +1310,7 @@
         </div>
         <div class="banner-actions">
           <!-- Anchor Mode Selector Pills -->
-          <div class="lens-mode-pills" id="anchorModeSelector">
+          <div class="lens-mode-pills" id="anchorModeSelector" data-no-anchor="true">
             <button type="button" class="lens-pill active" id="modePillMulti" onclick="selectAnchorMode('multi')" data-cursor-hover="true">📍 Multi Anchor</button>
             <button type="button" class="lens-pill" id="modePillSingle" onclick="selectAnchorMode('single')" data-cursor-hover="true">🎯 One Anchor (Follows)</button>
             <button type="button" class="lens-pill" id="modePillOff" onclick="selectAnchorMode('off')" data-cursor-hover="true">🚫 Off</button>
@@ -1202,20 +1321,20 @@
       </div>
       <div class="banner-steps">
         <div class="banner-step">
-          <strong>1️⃣ Stage 1: Drop Anchor (1st Triple-Tap)</strong>
-          Triple-Click anywhere on screen to pin the tail at that spot. A circular anchor appears with a fluid burst.
+          <strong>📍 Multi Anchor Weaving Mode</strong>
+          Triple-tap (or click "Drop Anchor") to start. Each subsequent click plants a new waypoint. Rassi droops naturally like water when loose, and pulls tight when stretched!
         </div>
         <div class="banner-step">
-          <strong>2️⃣ Stage 2: Stretch &amp; Sag Physics</strong>
-          Move your cursor away to stretch the liquid cord. The tendon naturally thins down (Poisson's effect) and droops with gravitational sag.
+          <strong>🎯 One Anchor Mode (Follows)</strong>
+          Only 1 anchor pin is maintained. Triple-tap to drop anchor; clicking anywhere new smoothly glides the anchor to the new spot without ever breaking the cord!
         </div>
         <div class="banner-step">
-          <strong>3️⃣ Stage 3: Sever &amp; Drop (2nd Triple-Tap)</strong>
-          Triple-Click again anywhere to sever the stretched cord. It detaches completely from your cursor and tumbles down the screen under Verlet gravity!
+          <strong>📜 Scroll-Locked Physics</strong>
+          Scroll up or down freely! All planted anchors, connecting spans, and severed falling ropes stay locked in place relative to page content instead of floating statically.
         </div>
         <div class="banner-step">
-          <strong>📱 Mobile &amp; Phone Touch:</strong>
-          Touch &amp; drag your finger across the screen to draw the liquid rope trail; tap anywhere to trigger pressurized liquid splashes and gravitational spills!
+          <strong>📱 Mobile Touch &amp; Spills</strong>
+          Touch and drag across the screen to draw the liquid rope trail; tap anywhere to trigger pressurized liquid splashes and cascading gravitational spills!
         </div>
       </div>
     </div>
@@ -1263,7 +1382,7 @@
 
         <div class="sandbox-tip">
           <span>💡</span>
-          <span><strong>Anti-Highlighting Guard:</strong> Rapid triple-tapping on this text will NEVER accidentally select words or paragraphs. Tendril cleanly suppresses selection while preserving single-click text selection!</span>
+          <span><strong>Native Text Selection Supported:</strong> Double-clicking or triple-tapping selects words and paragraphs naturally as expected by users, while rapid pointer movements continue drawing the liquid rope!</span>
         </div>
       </div>
     </section>
@@ -1356,6 +1475,30 @@
             <span class="slider-val" id="val-tau">36 ms</span>
           </div>
           <input type="range" id="slider-tau" min="15" max="80" value="36">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Tension Sensitivity</span>
+            <span class="slider-val" id="val-sens">1.0x</span>
+          </div>
+          <input type="range" id="slider-sens" min="0.2" max="2.5" step="0.1" value="1.0">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Slack / Water Sag</span>
+            <span class="slider-val" id="val-slack">0.35</span>
+          </div>
+          <input type="range" id="slider-slack" min="0.10" max="0.70" step="0.05" value="0.35">
+        </div>
+
+        <div class="slider-card">
+          <div class="slider-header">
+            <span>Tendon Thickness</span>
+            <span class="slider-val" id="val-width">9 px</span>
+          </div>
+          <input type="range" id="slider-width" min="4" max="18" step="1" value="9">
         </div>
 
         <div class="slider-card">
@@ -1475,28 +1618,40 @@
               <td>Blend mode: <code>'difference'</code> (Mendieta text-reveal lens), <code>'normal'</code> (solid ink), <code>'screen'</code> (additive luminous glow — <strong>best used in Dark Mode</strong>).</td>
             </tr>
             <tr>
+              <td><code>anchorMode</code></td>
+              <td>String</td>
+              <td><code>'multi'</code></td>
+              <td>Anchor interaction mode: <code>'multi'</code> (sequential waypoint weaving), <code>'single'</code> (1 anchor pin only; old anchor smoothly follows new click), or <code>'off'</code> (disabled).</td>
+            </tr>
+            <tr>
               <td><code>multiCheckpoints</code></td>
               <td>Boolean</td>
               <td><code>true</code></td>
-              <td>Allows planting multiple sequential stop checkpoints across the screen.</td>
+              <td>Allows planting multiple sequential stop checkpoints across the screen in <code>'multi'</code> mode.</td>
             </tr>
             <tr>
               <td><code>tripleTapAnchor</code></td>
               <td>Boolean</td>
               <td><code>true</code></td>
-              <td>Triple-tap to enter checkpoint mode and release all into severed falling rope.</td>
+              <td>Triple-tap to drop anchor and release all into severed falling rope.</td>
             </tr>
             <tr>
               <td><code>preventTextSelectOnTap</code></td>
               <td>Boolean</td>
               <td><code>true</code></td>
-              <td>Automatically blocks accidental word/paragraph text selection on rapid taps.</td>
+              <td>Automatically disables text/word highlighting during rapid multi-taps and anchoring so text doesn't turn blue.</td>
+            </tr>
+            <tr>
+              <td><code>ropeTensionSensitivity</code></td>
+              <td>Number</td>
+              <td><code>1.0</code></td>
+              <td>Developer sensitivity multiplier for rope tightening and loosening (<code>0.2</code> = loose/sluggish, <code>1.0</code> = standard, <code>2.5</code> = hyper-reactive).</td>
             </tr>
             <tr>
               <td><code>severedRopeGravity</code></td>
               <td>Number</td>
               <td><code>0.42</code></td>
-              <td>Downward gravitational acceleration for detached ropes.</td>
+              <td>Downward gravitational acceleration for detached falling ropes.</td>
             </tr>
             <tr>
               <td><code>spillOnClick</code></td>
@@ -1514,7 +1669,13 @@
               <td><code>addCheckpoint(x, y)</code></td>
               <td>Method</td>
               <td>—</td>
-              <td>Plants a new checkpoint pin at coordinates (or cursor position).</td>
+              <td>Plants an anchor checkpoint pin at coordinates (or cursor position). In <code>'single'</code> mode, old anchor glides to the new position.</td>
+            </tr>
+            <tr>
+              <td><code>setAnchorMode(mode)</code></td>
+              <td>Method</td>
+              <td>—</td>
+              <td>Switches anchor mode dynamically: <code>'multi'</code> | <code>'single'</code> | <code>'off'</code>.</td>
             </tr>
             <tr>
               <td><code>releaseAllAndDrop()</code></td>
@@ -1532,7 +1693,7 @@
               <td><code>reportBug(note)</code></td>
               <td>Method</td>
               <td>—</td>
-              <td>Opens email client addressed to <code>mauryanishant2005@gmail.com</code> with attached diagnostics.</td>
+              <td>Opens email client or direct fallback addressed to <code>mauryanishant2005@gmail.com</code> with attached diagnostics.</td>
             </tr>
           </tbody>
         </table>
@@ -1545,6 +1706,31 @@
     <span>🐞</span>
     <span>Report Bug</span>
   </button>
+
+  <!-- Bug Report & Diagnostics Interactive Modal -->
+  <div class="bug-modal-overlay" id="bugReportModal" onclick="if(event.target===this)closeBugModal()">
+    <div class="bug-modal" role="dialog" aria-modal="true" aria-labelledby="bugModalTitle">
+      <div class="bug-modal-header">
+        <h3 id="bugModalTitle"><span>🐞</span> Report Bug / Diagnostic</h3>
+        <button class="bug-modal-close" onclick="closeBugModal()" title="Close dialog" data-cursor-hover="true">&times;</button>
+      </div>
+      <div class="bug-modal-body">
+        <p>Send a direct issue report with your browser diagnostics attached to <strong>mauryanishant2005@gmail.com</strong>.</p>
+        <div class="bug-diag-box" id="bugDiagDetails">Collecting environment info...</div>
+        <p style="font-size:0.82rem; margin:0;">Click <strong>Launch Email</strong> to open your mail app, or <strong>Copy Diagnostics</strong> to paste into an email or issue ticket.</p>
+      </div>
+      <div class="bug-modal-actions">
+        <button type="button" class="bug-modal-btn primary" id="btnLaunchEmail" onclick="launchEmailClient()" data-cursor-hover="true">
+          <span>📧</span>
+          <span>Launch Email</span>
+        </button>
+        <button type="button" class="bug-modal-btn secondary" id="btnCopyDiag" onclick="copyBugDiagnostics()" data-cursor-hover="true">
+          <span>📋</span>
+          <span>Copy Diagnostics</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <footer>
     <p>Tendril.js — Liquid Rope &amp; Ink Cursor Engine · MIT License</p>
@@ -1563,8 +1749,9 @@
 <script src="tendril.js" data-tendril><\/script>
 
 <!-- That's it! It automatically initializes with 1:1 mouse tracking, 
-     text-revealing difference lens, emerald green palette, multi-checkpoint weaving,
-     phone touch trails, and severed falling ropes. -->`,
+     text-revealing difference lens, emerald green palette,
+     scroll-locked anchors, Multi & One Anchor modes ('multi' | 'single' | 'off'),
+     water-physics catenary droop & tightening, phone touch trails & spills! -->`,
 
       js: `// 1. Include script
 <script src="tendril.js"><\/script>
@@ -1575,18 +1762,22 @@
     color: '#10b981',              // Emerald Green
     secondaryColor: '#06b6d4',     // Cyan tail gradient
     mixBlendMode: 'difference',    // 'difference' (Mendieta text-reveal lens) | 'normal' | 'screen'
+    anchorMode: 'multi',           // 'multi' (multi-pin weaving) | 'single' (1 pin only; follows click) | 'off'
     spillOnClick: true,            // Liquid drops spill on click or mobile touch
-    tripleTapAnchor: true,         // Triple-tap waypoint weaving & severed falling rope
+    tripleTapAnchor: true,         // Triple-tap to anchor / sever into falling rope
     multiCheckpoints: true,        // Plant multiple stop pins across the screen
-    preventTextSelectOnTap: true,  // Eliminates accidental text selection on taps
+    preventTextSelectOnTap: false, // Allows native triple-click word/paragraph text selection
     severedRopeGravity: 0.42       // Verlet falling gravity
   });
 
   // Call API methods anytime:
-  cursor.addCheckpoint(x, y);      // Add waypoint pin
+  cursor.setAnchorMode('single');  // Switch to One Anchor mode (follows new clicks)
+  cursor.setAnchorMode('multi');   // Switch to Multi-Anchor weaving mode
+  cursor.setAnchorMode('off');     // Turn off anchor modes
+  cursor.addCheckpoint(x, y);      // Add or move anchor pin
   cursor.releaseAllAndDrop();      // Release all pins & cascade cord down
   cursor.setBlendMode('normal');   // Toggle difference vs normal ink
-  cursor.reportBug();              // 1-click issue report to mauryanishant2005@gmail.com
+  cursor.reportBug();              // Direct bug report with diagnostics
 <\/script>`,
 
       react: `// In your React / Next.js app:
@@ -1602,9 +1793,11 @@ export default function CustomCursor() {
       color: '#10b981',
       secondaryColor: '#06b6d4',
       mixBlendMode: 'difference',
+      anchorMode: 'multi',         // 'multi' | 'single' | 'off'
       spillOnClick: true,
       tripleTapAnchor: true,
-      multiCheckpoints: true
+      multiCheckpoints: true,
+      preventTextSelectOnTap: false
     });
 
     // Cleanup on unmount (zero memory leaks)
@@ -1626,9 +1819,11 @@ onMounted(() => {
     color: '#10b981',
     secondaryColor: '#06b6d4',
     mixBlendMode: 'difference',
+    anchorMode: 'multi',           // 'multi' | 'single' | 'off'
     spillOnClick: true,
     tripleTapAnchor: true,
-    multiCheckpoints: true
+    multiCheckpoints: true,
+    preventTextSelectOnTap: false
   });
 });
 
@@ -1644,6 +1839,7 @@ onUnmounted(() => {
     if (window.tendrilInstance) {
       window.tendrilInstance.setColor('#10b981', '#06b6d4');
       window.tendrilInstance.setBlendMode('difference');
+      window.tendrilInstance.setAnchorMode('multi'); // 'multi' | 'single' | 'off'
     }
   });
 <\/script>`
@@ -1657,10 +1853,13 @@ onUnmounted(() => {
 
 2. Key Features to verify:
 - Emerald green (#10b981) liquid physics with Cyan (#06b6d4) secondary gradient.
-- Difference blend mode lens (text inverts and is clearly seen through the liquid droplet).
+- Difference blend mode lens (text inverts and is clearly readable right through the liquid droplet).
 - Natural 1:1 pointer tracking without sticky magnetic drag.
-- Multi-checkpoint waypoint weaving: Triple-click to start weaving, single-click to plant waypoints, triple-click to release all into falling Verlet gravity.
-- Mobile / phone touch support: touch/drag draws the fluid rope, tapping erupts gravitational liquid spills.
+- Multi Anchor & One Anchor modes: Support for 'multi' (waypoint weaving) and 'single' (1 anchor only; smoothly follows new clicks without breaking), plus 'off'.
+- Real water physics: Cord droops with natural catenary sag when loose, and tightens taut when reaching max length.
+- Smooth page scrolling: Anchors and severed ropes stay naturally locked to document content during page scroll.
+- Mobile / phone touch support: touch/drag draws fluid rope, tapping erupts pressurized liquid spills.
+- Triple-tap text selection preserved (preventTextSelectOnTap: false).
 
 Please integrate this into my project HTML structure.`,
 
@@ -1674,12 +1873,19 @@ const cursor = new Tendril({
   color: '#10b981',             // Emerald green
   secondaryColor: '#06b6d4',    // Cyan tail gradient
   mixBlendMode: 'difference',   // Text reveal inversion lens
+  anchorMode: 'multi',          // 'multi' | 'single' | 'off'
   spillOnClick: true,           // Pressurized liquid spill
   tripleTapAnchor: true,        // Triple-tap waypoint weaving
-  multiCheckpoints: true,       // Sequential stop pins
-  preventTextSelectOnTap: true, // Prevents text selection on taps
+  multiCheckpoints: true,       // Sequential stop pins in 'multi' mode
+  preventTextSelectOnTap: false,// Allows native triple-click word/paragraph text selection
   severedRopeGravity: 0.42      // Verlet falling gravity
 });
+
+// Methods available:
+cursor.setAnchorMode('single'); // One Anchor mode: anchor smoothly follows new clicks
+cursor.setAnchorMode('multi');  // Multi Anchor mode: plants multiple pins
+cursor.setAnchorMode('off');    // Turns off anchoring
+cursor.spill(x, y);             // Trigger liquid spills
 
 Please wire this cleanly into my app's lifecycle with proper cleanup (cursor.destroy()).`,
 
@@ -1698,10 +1904,11 @@ export default function TendrilCursor() {
       color: '#10b981',
       secondaryColor: '#06b6d4',
       mixBlendMode: 'difference',
+      anchorMode: 'multi',         // 'multi' | 'single' | 'off'
       spillOnClick: true,
       tripleTapAnchor: true,
       multiCheckpoints: true,
-      preventTextSelectOnTap: true,
+      preventTextSelectOnTap: false,
       severedRopeGravity: 0.42
     });
 
@@ -1726,9 +1933,11 @@ onMounted(() => {
     color: '#10b981',
     secondaryColor: '#06b6d4',
     mixBlendMode: 'difference',
+    anchorMode: 'multi',           // 'multi' | 'single' | 'off'
     spillOnClick: true,
     tripleTapAnchor: true,
-    multiCheckpoints: true
+    multiCheckpoints: true,
+    preventTextSelectOnTap: false
   });
 });
 
@@ -1749,6 +1958,7 @@ Insert this snippet into Webflow Project Settings -> Custom Code -> Footer Code 
     if (window.tendrilInstance) {
       window.tendrilInstance.setColor('#10b981', '#06b6d4');
       window.tendrilInstance.setBlendMode('difference');
+      window.tendrilInstance.setAnchorMode('multi'); // or 'single'
     }
   });
 <\/script>
@@ -1773,7 +1983,9 @@ Please adapt this for my site structure.`
         gravity: 0.38,
         tripleTapAnchor: true,
         multiCheckpoints: true,
+        anchorMode: 'multi',
         preventTextSelectOnTap: true,
+        ropeTensionSensitivity: 1.0,
         severedRopeGravity: 0.42
       });
 
@@ -1865,6 +2077,9 @@ Please adapt this for my site structure.`
       if (!cursor) return;
       cursor.setAnchorMode(mode);
       updateAnchorModePills(mode);
+      if (mode !== 'off' && !cursor.isAnchored) {
+        cursor.addCheckpoint();
+      }
     }
 
     function updateAnchorModePills(mode) {
@@ -1890,12 +2105,14 @@ Please adapt this for my site structure.`
     }
 
     function triggerAnchorToggle() {
-      if (cursor) cursor.toggleAnchor();
+      if (!cursor) return;
+      // Always adds a pin in multi mode or moves the pin in single mode - never breaks the rope!
+      cursor.addCheckpoint();
     }
 
     function triggerSeverRope() {
       if (cursor && cursor.isAnchored) {
-        cursor.toggleAnchor();
+        cursor.releaseAllAndDrop();
       }
     }
 
@@ -1916,13 +2133,79 @@ Please adapt this for my site structure.`
     }
 
     function triggerBugReport() {
-      if (cursor && typeof cursor.reportBug === 'function') {
-        cursor.reportBug();
-      } else if (typeof Tendril !== 'undefined' && typeof Tendril.reportBug === 'function') {
-        Tendril.reportBug();
-      } else {
-        window.location.href = 'mailto:mauryanishant2005@gmail.com?subject=Tendril.js%20Bug%20Report';
+      const modal = document.getElementById('bugReportModal');
+      const diagBox = document.getElementById('bugDiagDetails');
+      
+      const diagInfo = [
+        '--- TENDRIL.JS RUNTIME DIAGNOSTIC ---',
+        'User Agent: ' + navigator.userAgent,
+        'Viewport: ' + window.innerWidth + 'x' + window.innerHeight,
+        'Scroll Position: (' + (window.scrollX || 0) + ', ' + (window.scrollY || 0) + ')',
+        'Device Pixel Ratio: ' + (window.devicePixelRatio || 1),
+        'Touch Supported: ' + (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)),
+        'Anchor Mode: ' + (cursor ? cursor.opts.anchorMode : 'N/A'),
+        'Is Anchored: ' + (cursor ? cursor.isAnchored : 'N/A'),
+        'Active Checkpoints: ' + (cursor && cursor.checkpoints ? cursor.checkpoints.length : 0),
+        'Active Severed Ropes: ' + (cursor && cursor.severedRopes ? cursor.severedRopes.length : 0),
+        'Active Droplets: ' + (cursor && cursor.drops ? cursor.drops.length : 0),
+        'Theme: ' + (document.body.classList.contains('dark-mode') ? 'Dark' : 'Light'),
+        'URL: ' + window.location.href,
+        'Timestamp: ' + new Date().toISOString()
+      ].join('\n');
+
+      if (diagBox) {
+        diagBox.textContent = diagInfo;
       }
+
+      if (modal) {
+        modal.classList.add('active');
+      } else {
+        // Fallback if modal not present in DOM
+        launchEmailClient();
+      }
+    }
+
+    function closeBugModal() {
+      const modal = document.getElementById('bugReportModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function launchEmailClient() {
+      const diagBox = document.getElementById('bugDiagDetails');
+      const diagText = diagBox ? diagBox.textContent : '';
+      const subject = encodeURIComponent('Tendril.js Bug Report');
+      const body = encodeURIComponent(
+        'Hi Nishant,\n\nI encountered the following issue in Tendril.js:\n\n[Describe what happened here]\n\n' + diagText
+      );
+      const mailtoUrl = 'mailto:mauryanishant2005@gmail.com?subject=' + subject + '&body=' + body;
+
+      // Create temporary anchor to open in new tab / app safely without browser popup block
+      const a = document.createElement('a');
+      a.href = mailtoUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) a.parentNode.removeChild(a);
+      }, 250);
+    }
+
+    function copyBugDiagnostics() {
+      const diagBox = document.getElementById('bugDiagDetails');
+      const text = diagBox ? diagBox.textContent : '';
+      if (!text) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopyDiag');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<span>✅</span><span>Copied!</span>';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }
+      }).catch(() => {
+        alert('Failed to copy to clipboard. Please select and copy text from the diagnostics box manually.');
+      });
     }
 
     function updateAnchorUI(isAnchored, data) {
@@ -1940,22 +2223,23 @@ Please adapt this for my site structure.`
         hud.classList.add('anchored');
         hudDot.textContent = '⚓';
         hudText.textContent = 'ANCHORED & STRETCHING';
-        btnIcon.textContent = '✂️';
-        btnLabel.textContent = 'Sever & Drop Rope';
+        var isSingle = cursor && cursor.opts && cursor.opts.anchorMode === 'single';
+        btnIcon.textContent = isSingle ? '🎯' : '📍';
+        btnLabel.textContent = isSingle ? 'Move Anchor Here' : 'Plant Next Pin';
         if (bannerSeverBtn) bannerSeverBtn.style.display = 'inline-block';
-        if (bannerAnchorBtn) bannerAnchorBtn.textContent = '✂️ Sever Rope';
-        bannerTitle.textContent = '⚓ Tail Anchored! Move away to stretch the tendon:';
-        bannerDesc.textContent = 'Triple-Click again (or click Sever & Drop) to detach the cord and watch it fall with Verlet gravity physics!';
+        if (bannerAnchorBtn) bannerAnchorBtn.textContent = isSingle ? '🎯 Move Anchor' : '📍 Plant Next Pin';
+        bannerTitle.textContent = '⚓ Tail Anchored! Stretch the cord across the page:';
+        bannerDesc.textContent = 'Click anywhere or press buttons to plant waypoints / glide anchor. Click "✂️ Sever & Drop Rope" whenever you want to cut it!';
       } else {
         hud.classList.remove('anchored');
         hudDot.textContent = '🟢';
         hudText.textContent = 'FREE ROPE';
         btnIcon.textContent = '⚓';
-        btnLabel.textContent = 'Drop Anchor (Triple-Tap)';
+        btnLabel.textContent = 'Drop Anchor';
         if (bannerSeverBtn) bannerSeverBtn.style.display = 'none';
         if (bannerAnchorBtn) bannerAnchorBtn.textContent = '⚓ Drop Anchor Here';
-        bannerTitle.textContent = '⚓ 2-Stage Triple-Tap Anchor & Falling Physics Rope:';
-        bannerDesc.textContent = 'Triple-click anywhere to pin the tail at that spot. Stretch the cord across the page, then triple-click again to sever the cord into an independent falling rope!';
+        bannerTitle.textContent = '⚓ Anchor & Weaving Modes:';
+        bannerDesc.textContent = 'Click anywhere or use the buttons below to anchor the cord and weave waypoints across the page!';
       }
     }
 
@@ -2002,28 +2286,49 @@ Please adapt this for my site structure.`
     function setupSliders() {
       const sTau = document.getElementById('slider-tau');
       const vTau = document.getElementById('val-tau');
-      sTau.addEventListener('input', (e) => {
+      if (sTau) sTau.addEventListener('input', (e) => {
         vTau.textContent = e.target.value + ' ms';
         cursor.setOptions({ segTau: parseFloat(e.target.value) });
       });
 
+      const sSens = document.getElementById('slider-sens');
+      const vSens = document.getElementById('val-sens');
+      if (sSens) sSens.addEventListener('input', (e) => {
+        vSens.textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+        cursor.setOptions({ ropeTensionSensitivity: parseFloat(e.target.value) });
+      });
+
+      const sSlack = document.getElementById('slider-slack');
+      const vSlack = document.getElementById('val-slack');
+      if (sSlack) sSlack.addEventListener('input', (e) => {
+        vSlack.textContent = parseFloat(e.target.value).toFixed(2);
+        cursor.setOptions({ ropeSlack: parseFloat(e.target.value) });
+      });
+
+      const sWidth = document.getElementById('slider-width');
+      const vWidth = document.getElementById('val-width');
+      if (sWidth) sWidth.addEventListener('input', (e) => {
+        vWidth.textContent = e.target.value + ' px';
+        cursor.setOptions({ strokeWidth: parseFloat(e.target.value) });
+      });
+
       const sBlur = document.getElementById('slider-blur');
       const vBlur = document.getElementById('val-blur');
-      sBlur.addEventListener('input', (e) => {
+      if (sBlur) sBlur.addEventListener('input', (e) => {
         vBlur.textContent = e.target.value + ' px';
         cursor.setOptions({ gooeyBlur: parseFloat(e.target.value) });
       });
 
       const sGrav = document.getElementById('slider-grav');
       const vGrav = document.getElementById('val-grav');
-      sGrav.addEventListener('input', (e) => {
+      if (sGrav) sGrav.addEventListener('input', (e) => {
         vGrav.textContent = e.target.value;
         cursor.setOptions({ severedRopeGravity: parseFloat(e.target.value) });
       });
 
       const sSpill = document.getElementById('slider-spill');
       const vSpill = document.getElementById('val-spill');
-      sSpill.addEventListener('input', (e) => {
+      if (sSpill) sSpill.addEventListener('input', (e) => {
         vSpill.textContent = e.target.value + ' drops';
         cursor.setOptions({ spillCount: parseInt(e.target.value, 10) });
       });
